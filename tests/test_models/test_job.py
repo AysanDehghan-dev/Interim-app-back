@@ -178,4 +178,4 @@ def test_update_job(app, test_job):
         
         # Verify job was updated
         updated_job = Job.find_by_id(test_job['_id'])
-        ass
+        assert updated_job['title'] == 'Updated Job Title'
