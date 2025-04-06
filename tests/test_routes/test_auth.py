@@ -1,3 +1,4 @@
+from datetime import datetime
 import pytest
 import json
 from bson import ObjectId
@@ -115,8 +116,8 @@ def test_login_user(client, app, db):
         'last_name': 'Test',
         'email': 'login.test@example.com',
         'password': hash_password('password123'),
-        'created_at': app.app_context().app.db.users.save,
-        'updated_at': app.app_context().app.db.users.save
+        'created_at': datetime.utcnow(),  # Fix: Replace app.app_context().app.db.users.save with datetime
+        'updated_at': datetime.utcnow()   # Fix: Replace app.app_context().app.db.users.save with datetime
     }
     db.users.insert_one(user_data)
     
@@ -169,8 +170,8 @@ def test_login_company(client, app, db):
         'description': 'A company for login testing',
         'email': 'login.company@example.com',
         'password': hash_password('password123'),
-        'created_at': app.app_context().app.db.users.save,
-        'updated_at': app.app_context().app.db.users.save
+        'created_at': datetime.utcnow(),  # Fix: Replace app.app_context().app.db.users.save with datetime
+        'updated_at': datetime.utcnow()   # Fix: Replace app.app_context().app.db.users.save with datetime
     }
     db.companies.insert_one(company_data)
     
