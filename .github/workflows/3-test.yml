@@ -3,7 +3,7 @@ run-name: CI Pipeline - Test
 
 on:
   workflow_run:
-    workflows: ["2-Code Format"]
+    workflows: ["2-Python Check"]
     types:
       - completed
     branches: [ main, master ]

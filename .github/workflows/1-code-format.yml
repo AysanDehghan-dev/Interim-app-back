@@ -1,22 +1,20 @@
-name: 2-Code Format
+name: 1-Code Format
 run-name: CI Pipeline - Code Format
 
 on:
-  workflow_run:
-    workflows: ["1-Python Check"]
-    types:
-      - completed
+  push:
+    branches: [ main, master ]
+  pull_request:
     branches: [ main, master ]
 
 jobs:
   format:
     name: Code Format
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.ref_name }}
           
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -46,4 +44,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "style: Format code with isort and black"
-          branch: ${{ github.ref_name }}
+          branch: ${{ github.head_ref || github.ref_name }}

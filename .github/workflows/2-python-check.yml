@@ -1,15 +1,17 @@
-name: 1-Python Check
+name: 2-Python Check
 run-name: CI Pipeline - Python Check
 
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
+  workflow_run:
+    workflows: ["1-Code Format"]
+    types:
+      - completed
     branches: [ main, master ]
 
 jobs:
   lint:
     name: Python Check
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
