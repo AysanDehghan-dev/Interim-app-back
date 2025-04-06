@@ -1,6 +1,7 @@
-import pytest
 import json
 from datetime import datetime
+
+import pytest
 
 
 def test_get_profile(client, auth_headers):

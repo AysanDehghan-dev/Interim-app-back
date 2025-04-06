@@ -1,6 +1,8 @@
-from app.utils.db import insert_one, find_one, update_one, find_by_id, find_many
-from bson.objectid import ObjectId
 from datetime import datetime
+
+from bson.objectid import ObjectId
+
+from app.utils.db import find_by_id, find_many, find_one, insert_one, update_one
 
 
 class ApplicationStatus:

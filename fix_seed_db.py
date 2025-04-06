@@ -1,12 +1,13 @@
 #!/usr/bin/env python
-import os
 import datetime
-from bson import ObjectId
-from pymongo import MongoClient
-from passlib.hash import pbkdf2_sha256
+import os
 
 # Make sure the script can find the modules
 import sys
+
+from bson import ObjectId
+from passlib.hash import pbkdf2_sha256
+from pymongo import MongoClient
 
 sys.path.append(".")
 

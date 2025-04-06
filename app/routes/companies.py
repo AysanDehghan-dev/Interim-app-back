@@ -1,7 +1,7 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from marshmallow import ValidationError
 from bson import ObjectId
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
+from marshmallow import ValidationError
 
 from app.models.company import Company
 from app.models.job import Job

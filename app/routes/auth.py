@@ -1,13 +1,14 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, jsonify, request
 from marshmallow import ValidationError
-from app.models.user import User
+
 from app.models.company import Company
-from app.schemas.user_schema import UserLoginSchema, UserRegisterSchema, UserSchema
+from app.models.user import User
 from app.schemas.company_schema import (
     CompanyLoginSchema,
     CompanyRegisterSchema,
     CompanySchema,
 )
+from app.schemas.user_schema import UserLoginSchema, UserRegisterSchema, UserSchema
 from app.utils.security import generate_token
 
 auth_bp = Blueprint("auth", __name__)

@@ -1,12 +1,12 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity, get_jwt
-from marshmallow import ValidationError
 from bson import ObjectId
+from flask import Blueprint, jsonify, request
+from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
+from marshmallow import ValidationError
 
-from app.models.user import User
 from app.models.application import Application
-from app.schemas.user_schema import UserSchema
+from app.models.user import User
 from app.schemas.application_schema import ApplicationSchema
+from app.schemas.user_schema import UserSchema
 
 users_bp = Blueprint("users", __name__)
 
@@ -96,8 +96,8 @@ def get_applications():
         applications = Application.find_by_user(user_id)
 
         # Get job data for each application
-        from app.models.job import Job
         from app.models.company import Company
+        from app.models.job import Job
 
         for app in applications:
             job = Job.find_by_id(app["job_id"])

@@ -1,6 +1,7 @@
-from datetime import datetime
-import pytest
 import json
+from datetime import datetime
+
+import pytest
 from bson import ObjectId
 
 

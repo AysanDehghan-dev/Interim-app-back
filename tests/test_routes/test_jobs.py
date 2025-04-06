@@ -1,8 +1,10 @@
-import pytest
 import json
+
+import pytest
 from bson import ObjectId
-from app.models.job import JobType
+
 from app.models.application import ApplicationStatus
+from app.models.job import JobType
 
 
 def test_search_jobs(client, test_job):

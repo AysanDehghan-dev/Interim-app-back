@@ -1,6 +1,7 @@
+from datetime import datetime
+
 import pytest
 from bson import ObjectId
-from datetime import datetime
 
 from app.models.user import User
 

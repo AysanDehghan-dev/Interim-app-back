@@ -1,13 +1,13 @@
+from bson import ObjectId
 from marshmallow import (
     Schema,
+    ValidationError,
     fields,
-    validate,
     post_load,
     pre_dump,
+    validate,
     validates_schema,
-    ValidationError,
 )
-from bson import ObjectId
 
 
 class CompanySchema(Schema):

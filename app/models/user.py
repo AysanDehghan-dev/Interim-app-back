@@ -1,6 +1,7 @@
-from app.utils.db import insert_one, find_one, update_one, find_by_id
-from app.utils.security import hash_password, verify_password
 from bson.objectid import ObjectId
+
+from app.utils.db import find_by_id, find_one, insert_one, update_one
+from app.utils.security import hash_password, verify_password
 
 
 class User:

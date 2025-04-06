@@ -3,17 +3,18 @@ import sys
 
 # Add project root to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import pytest
-import mongomock
-from bson import ObjectId
-from flask_jwt_extended import create_access_token
 from datetime import datetime, timedelta
 
+import mongomock
+import pytest
+from bson import ObjectId
+from flask_jwt_extended import create_access_token
+
 from app import create_app
-from app.models.user import User
+from app.models.application import Application, ApplicationStatus
 from app.models.company import Company
 from app.models.job import Job, JobType
-from app.models.application import Application, ApplicationStatus
+from app.models.user import User
 from app.utils.security import hash_password
 
 

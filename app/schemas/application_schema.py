@@ -1,5 +1,6 @@
-from marshmallow import Schema, fields, validate, post_load, pre_dump
 from bson import ObjectId
+from marshmallow import Schema, fields, post_load, pre_dump, validate
+
 from app.models.application import ApplicationStatus
 
 

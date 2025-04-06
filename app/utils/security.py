@@ -1,6 +1,7 @@
-from passlib.hash import pbkdf2_sha256
-from flask_jwt_extended import create_access_token
 import datetime
+
+from flask_jwt_extended import create_access_token
+from passlib.hash import pbkdf2_sha256
 
 
 def hash_password(password):

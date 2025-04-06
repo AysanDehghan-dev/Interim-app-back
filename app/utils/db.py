@@ -1,6 +1,7 @@
-from flask import current_app
-from bson.objectid import ObjectId
 import datetime
+
+from bson.objectid import ObjectId
+from flask import current_app
 
 
 def get_db():

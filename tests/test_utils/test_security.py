@@ -1,9 +1,10 @@
-import pytest
-import jwt
 from datetime import datetime, timedelta
+
+import jwt
+import pytest
 from bson import ObjectId
 
-from app.utils.security import hash_password, verify_password, generate_token
+from app.utils.security import generate_token, hash_password, verify_password
 
 
 def test_hash_password():

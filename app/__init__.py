@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from pymongo import MongoClient
+
 from config import get_config
 
 # Initialize extensions
@@ -57,8 +58,8 @@ def init_db(app):
 def register_blueprints(app):
     """Register Flask blueprints"""
     from app.routes.auth import auth_bp
-    from app.routes.jobs import jobs_bp
     from app.routes.companies import companies_bp
+    from app.routes.jobs import jobs_bp
     from app.routes.users import users_bp
 
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
