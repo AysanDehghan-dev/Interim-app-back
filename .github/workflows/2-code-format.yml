@@ -1,11 +1,16 @@
-name: Format Code
+name: 2-Code Format
 
 on:
-  workflow_dispatch:  # Allow manual triggering
+  workflow_run:
+    workflows: ["1-Python Check"]
+    types:
+      - completed
+    branches: [ main, master ]
 
 jobs:
   format:
-    name: Format
+    name: Code Format
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -40,4 +45,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "style: Format code with isort and black"
-          branch: ${{ github.head_ref }}
+          branch: ${{ github.ref_name }}
