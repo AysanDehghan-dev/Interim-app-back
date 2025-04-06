@@ -1,24 +1,17 @@
-name: Test
+name: Format Code
 
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+  workflow_dispatch:  # Allow manual triggering
 
 jobs:
-  test:
+  format:
+    name: Format
     runs-on: ubuntu-latest
-    
-    services:
-      mongodb:
-        image: mongo:4.4
-        ports:
-          - 27017:27017
-
     steps:
       - uses: actions/checkout@v3
-      
+        with:
+          ref: ${{ github.head_ref }}
+          
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -35,11 +28,16 @@ jobs:
         run: |
           poetry install --no-interaction
           
-      - name: Run tests and collect coverage
+      - name: Format imports with isort
         run: |
-          poetry run pytest --cov=app --cov-report=xml
+          poetry run isort .
           
-      - name: Upload coverage reports to Codecov
-          uses: codecov/codecov-action@v5
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Format code with Black
+        run: |
+          poetry run black .
+          
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "style: Format code with isort and black"
+          branch: ${{ github.head_ref }}
