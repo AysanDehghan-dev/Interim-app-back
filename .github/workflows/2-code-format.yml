@@ -1,4 +1,5 @@
 name: 2-Code Format
+run-name: CI Pipeline - Code Format
 
 on:
   workflow_run:

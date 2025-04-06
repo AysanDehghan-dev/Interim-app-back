@@ -1,4 +1,5 @@
 name: 3-Test
+run-name: CI Pipeline - Test
 
 on:
   workflow_run:

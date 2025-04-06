@@ -1,4 +1,5 @@
 name: 1-Python Check
+run-name: CI Pipeline - Python Check
 
 on:
   push:
