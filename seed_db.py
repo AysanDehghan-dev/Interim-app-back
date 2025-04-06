@@ -1,10 +1,11 @@
+import datetime
 import os
 import sys
-import datetime
+
 from bson import ObjectId
 from dotenv import load_dotenv
-from pymongo import MongoClient
 from passlib.hash import pbkdf2_sha256
+from pymongo import MongoClient
 
 # Load environment variables
 load_dotenv()
@@ -12,7 +13,9 @@ load_dotenv()
 # Connect to MongoDB
 # Check if we're in Docker or local environment
 import socket
-def is_mongo_available(host='mongo', port=27017, timeout=1):
+
+
+def is_mongo_available(host="mongo", port=27017, timeout=1):
     """Check if MongoDB is available at the given host and port"""
     try:
         socket.create_connection((host, port), timeout=timeout)
@@ -20,15 +23,16 @@ def is_mongo_available(host='mongo', port=27017, timeout=1):
     except (socket.timeout, socket.error):
         return False
 
+
 # Try to connect to 'mongo' hostname (Docker), otherwise fallback to localhost
-if is_mongo_available(host='mongo'):
-    MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://mongo:27017/interimapp')
+if is_mongo_available(host="mongo"):
+    MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb://mongo:27017/interimapp")
 else:
-    MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017/interimapp')
+    MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/interimapp")
 
 print(f"Connecting to MongoDB at {MONGODB_URI}")
 client = MongoClient(MONGODB_URI)
-db_name = MONGODB_URI.split('/')[-1]
+db_name = MONGODB_URI.split("/")[-1]
 db = client[db_name]
 
 # Clear existing data
@@ -37,21 +41,24 @@ db.companies.delete_many({})
 db.jobs.delete_many({})
 db.applications.delete_many({})
 
+
 # Job types
 class JobType:
-    FULL_TIME = 'FULL_TIME'
-    PART_TIME = 'PART_TIME'
-    CONTRACT = 'CONTRACT'
-    TEMPORARY = 'TEMPORARY'
-    INTERNSHIP = 'INTERNSHIP'
+    FULL_TIME = "FULL_TIME"
+    PART_TIME = "PART_TIME"
+    CONTRACT = "CONTRACT"
+    TEMPORARY = "TEMPORARY"
+    INTERNSHIP = "INTERNSHIP"
+
 
 # Application statuses
 class ApplicationStatus:
-    PENDING = 'PENDING'
-    REVIEWING = 'REVIEWING'
-    INTERVIEW = 'INTERVIEW'
-    REJECTED = 'REJECTED'
-    ACCEPTED = 'ACCEPTED'
+    PENDING = "PENDING"
+    REVIEWING = "REVIEWING"
+    INTERVIEW = "INTERVIEW"
+    REJECTED = "REJECTED"
+    ACCEPTED = "ACCEPTED"
+
 
 # Create companies
 companies = [
@@ -70,7 +77,7 @@ companies = [
         "country": "France",
         "jobs": [],
         "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow()
+        "updated_at": datetime.datetime.utcnow(),
     },
     {
         "_id": ObjectId(),
@@ -87,8 +94,8 @@ companies = [
         "country": "France",
         "jobs": [],
         "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow()
-    }
+        "updated_at": datetime.datetime.utcnow(),
+    },
 ]
 
 # Insert companies
@@ -120,7 +127,7 @@ users = [
                 "start_date": datetime.datetime(2020, 1, 1),
                 "end_date": datetime.datetime(2022, 12, 31),
                 "current": False,
-                "description": "Développement d'applications web avec React et TypeScript."
+                "description": "Développement d'applications web avec React et TypeScript.",
             }
         ],
         "education": [
@@ -132,11 +139,11 @@ users = [
                 "start_date": datetime.datetime(2015, 9, 1),
                 "end_date": datetime.datetime(2020, 6, 30),
                 "current": False,
-                "description": "Spécialisation en développement web et applications mobiles."
+                "description": "Spécialisation en développement web et applications mobiles.",
             }
         ],
         "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow()
+        "updated_at": datetime.datetime.utcnow(),
     },
     {
         "_id": ObjectId(),
@@ -159,7 +166,7 @@ users = [
                 "start_date": datetime.datetime(2019, 3, 1),
                 "end_date": datetime.datetime(2023, 2, 28),
                 "current": False,
-                "description": "Analyse de données et création de modèles prédictifs."
+                "description": "Analyse de données et création de modèles prédictifs.",
             }
         ],
         "education": [
@@ -171,12 +178,12 @@ users = [
                 "start_date": datetime.datetime(2014, 9, 1),
                 "end_date": datetime.datetime(2019, 6, 30),
                 "current": False,
-                "description": "Spécialisation en data science et intelligence artificielle."
+                "description": "Spécialisation en data science et intelligence artificielle.",
             }
         ],
         "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow()
-    }
+        "updated_at": datetime.datetime.utcnow(),
+    },
 ]
 
 # Insert users
@@ -197,19 +204,15 @@ jobs = [
             "Maîtrise de HTML5, CSS3 et JavaScript ES6+",
             "Expérience avec les outils de gestion de version comme Git",
             "Connaissance de Redux ou Context API pour la gestion d'état",
-            "Expérience avec les tests unitaires (Jest, React Testing Library)"
+            "Expérience avec les tests unitaires (Jest, React Testing Library)",
         ],
         "location": "Lyon, France",
         "type": JobType.FULL_TIME,
-        "salary": {
-            "min": 40000,
-            "max": 55000,
-            "currency": "EUR"
-        },
+        "salary": {"min": 40000, "max": 55000, "currency": "EUR"},
         "start_date": datetime.datetime.utcnow(),
         "applications": [],
         "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow()
+        "updated_at": datetime.datetime.utcnow(),
     },
     {
         "_id": ObjectId(),
@@ -221,19 +224,15 @@ jobs = [
             "Expérience pratique en machine learning et en data mining",
             "Maîtrise de Python et des bibliothèques de data science (Pandas, NumPy, Scikit-learn)",
             "Connaissance approfondie des bases de données SQL et NoSQL",
-            "Excellentes capacités d'analyse et de communication"
+            "Excellentes capacités d'analyse et de communication",
         ],
         "location": "Paris, France",
         "type": JobType.CONTRACT,
-        "salary": {
-            "min": 45000,
-            "max": 60000,
-            "currency": "EUR"
-        },
+        "salary": {"min": 45000, "max": 60000, "currency": "EUR"},
         "start_date": datetime.datetime.utcnow(),
         "applications": [],
         "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow()
+        "updated_at": datetime.datetime.utcnow(),
     },
     {
         "_id": ObjectId(),
@@ -245,19 +244,15 @@ jobs = [
             "Maîtrise des bases de données MongoDB et des requêtes complexes",
             "Connaissance approfondie de Git et des workflows de développement",
             "Expérience dans la conception et l'implémentation d'API RESTful",
-            "Capacité à travailler de manière autonome et à résoudre des problèmes complexes"
+            "Capacité à travailler de manière autonome et à résoudre des problèmes complexes",
         ],
         "location": "Lyon, France",
         "type": JobType.FULL_TIME,
-        "salary": {
-            "min": 42000,
-            "max": 58000,
-            "currency": "EUR"
-        },
+        "salary": {"min": 42000, "max": 58000, "currency": "EUR"},
         "start_date": datetime.datetime.utcnow(),
         "applications": [],
         "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow()
+        "updated_at": datetime.datetime.utcnow(),
     },
     {
         "_id": ObjectId(),
@@ -269,20 +264,16 @@ jobs = [
             "Maîtrise des outils de design (Figma, Adobe XD, Sketch)",
             "Expérience dans la conduite de recherches utilisateurs et de tests d'utilisabilité",
             "Connaissance des principes d'accessibilité et de responsive design",
-            "Capacité à communiquer et défendre vos choix de design"
+            "Capacité à communiquer et défendre vos choix de design",
         ],
         "location": "Paris, France",
         "type": JobType.PART_TIME,
-        "salary": {
-            "min": 30000,
-            "max": 40000,
-            "currency": "EUR"
-        },
+        "salary": {"min": 30000, "max": 40000, "currency": "EUR"},
         "start_date": datetime.datetime.utcnow(),
         "applications": [],
         "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow()
-    }
+        "updated_at": datetime.datetime.utcnow(),
+    },
 ]
 
 # Insert jobs
@@ -291,13 +282,10 @@ for job in jobs:
     result = db.jobs.insert_one(job)
     job_id = job["_id"]
     job_ids.append(job_id)
-    
+
     # Update company with job reference
     company_id = job["company_id"]
-    db.companies.update_one(
-        {"_id": company_id},
-        {"$push": {"jobs": job_id}}
-    )
+    db.companies.update_one({"_id": company_id}, {"$push": {"jobs": job_id}})
 
 # Create applications
 applications = [
@@ -308,7 +296,7 @@ applications = [
         "status": ApplicationStatus.PENDING,
         "cover_letter": "Je suis très intéressé par ce poste car j'ai une solide expérience en développement frontend et je souhaite rejoindre une entreprise innovante comme la vôtre.",
         "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow()
+        "updated_at": datetime.datetime.utcnow(),
     },
     {
         "_id": ObjectId(),
@@ -317,21 +305,18 @@ applications = [
         "status": ApplicationStatus.REVIEWING,
         "cover_letter": "Avec mon expérience en développement et mon intérêt pour la data science, je pense être un bon candidat pour ce poste. Je suis impatient de pouvoir contribuer à vos projets innovants.",
         "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow()
-    }
+        "updated_at": datetime.datetime.utcnow(),
+    },
 ]
 
 # Insert applications
 for application in applications:
     result = db.applications.insert_one(application)
     application_id = application["_id"]
-    
+
     # Update job with application reference
     job_id = application["job_id"]
-    db.jobs.update_one(
-        {"_id": job_id},
-        {"$push": {"applications": application_id}}
-    )
+    db.jobs.update_one({"_id": job_id}, {"$push": {"applications": application_id}})
 
 print("Database seeded successfully!")
 print(f"Created {len(companies)} companies")
