@@ -2,6 +2,7 @@ import logging
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from flask_restx import Api
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 import time
@@ -44,8 +45,60 @@ def create_app():
     # Add request middleware
     setup_middleware(app)
     
-    # Register blueprints
-    register_blueprints(app)
+    # Initialize Swagger API with expanded sections
+    api = Api(
+        app,
+        version='1.0',
+        title='🚀 InterimApp API',
+        description='''
+        <h2>Welcome to InterimApp API Documentation!</h2>
+        <p>A comprehensive job search platform API for students and companies.</p>
+        
+        <h3>🔐 How to Use Authentication:</h3>
+        <ol>
+            <li><strong>Register/Login:</strong> Use the auth endpoints to create an account or login</li>
+            <li><strong>Copy Token:</strong> From the response, copy the 'token' value</li>
+            <li><strong>Authorize:</strong> Click the 🔒 "Authorize" button above</li>
+            <li><strong>Enter Token:</strong> Paste: <code>Bearer YOUR_TOKEN_HERE</code></li>
+            <li><strong>Test:</strong> Now you can use protected endpoints!</li>
+        </ol>
+        
+        <h3>📋 Test Accounts:</h3>
+        <p><strong>User:</strong> jean.dupont@example.com / password</p>
+        <p><strong>Company:</strong> contact@techcorp.example.com / password</p>
+        
+        <h3>🔄 Quick Start Flow:</h3>
+        <p>1. Login as company → 2. Create a job → 3. Login as user → 4. Apply for job</p>
+        ''',
+        doc='/api/docs/',
+        prefix='/api',
+        # Make all sections expanded by default
+        doc_expansion='full'
+    )
+    
+    # Configure Swagger security with clear instructions
+    api.authorizations = {
+        'Bearer': {
+            'type': 'apiKey',
+            'in': 'header',
+            'name': 'Authorization',
+            'description': '''
+                <h4>🔑 JWT Token Authentication</h4>
+                <p>Enter your token in this format:</p>
+                <code>Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...</code>
+                <br><br>
+                <p><strong>Steps:</strong></p>
+                <ol>
+                    <li>Login/Register using auth endpoints</li>
+                    <li>Copy the "token" from response</li>
+                    <li>Paste it here with "Bearer " prefix</li>
+                </ol>
+            '''
+        }
+    }
+    
+    # Register blueprints and namespaces
+    register_blueprints(app, api)
     
     # Register error handlers
     register_error_handlers(app)
@@ -59,7 +112,8 @@ def create_app():
             return jsonify({
                 "status": "healthy",
                 "database": "connected",
-                "timestamp": time.time()
+                "timestamp": time.time(),
+                "version": "1.0.0"
             }), 200
         except Exception as e:
             return jsonify({
@@ -70,7 +124,25 @@ def create_app():
     
     @app.route("/api/test", methods=["GET"])
     def test_api():
-        return jsonify({"status": "API server is running"}), 200
+        return jsonify({
+            "status": "API server is running",
+            "message": "🎉 InterimApp backend is working!",
+            "endpoints": {
+                "docs": "/api/docs/",
+                "health": "/api/health"
+            }
+        }), 200
+    
+    # Redirect root to swagger docs with welcome message
+    @app.route("/")
+    def redirect_to_docs():
+        return jsonify({
+            "message": "🚀 Welcome to InterimApp API!", 
+            "documentation": "/api/docs/",
+            "health": "/api/health",
+            "test": "/api/test",
+            "tip": "Visit /api/docs/ for interactive API documentation"
+        }), 200
     
     return app
 
@@ -129,15 +201,15 @@ def setup_jwt_handlers(app):
     
     @jwt.expired_token_loader
     def expired_token_callback(jwt_header, jwt_payload):
-        return jsonify({"error": "Token has expired"}), 401
+        return jsonify({"error": "Token has expired", "message": "Please login again"}), 401
     
     @jwt.invalid_token_loader
     def invalid_token_callback(error):
-        return jsonify({"error": "Invalid token"}), 401
+        return jsonify({"error": "Invalid token", "message": "Please provide a valid token"}), 401
     
     @jwt.unauthorized_loader
     def missing_token_callback(error):
-        return jsonify({"error": "Authorization token required"}), 401
+        return jsonify({"error": "Authorization token required", "message": "Please login first"}), 401
 
 def setup_middleware(app):
     """Setup request/response middleware"""
@@ -161,8 +233,22 @@ def setup_middleware(app):
         response.headers['X-XSS-Protection'] = '1; mode=block'
         return response
 
-def register_blueprints(app):
-    """Register Flask blueprints"""
+def register_blueprints(app, api):
+    """Register Flask blueprints and Swagger namespaces"""
+    
+    # Import and register all namespaces for Swagger
+    from app.routes.auth import auth_ns
+    from app.routes.users import users_ns
+    from app.routes.companies import companies_ns
+    from app.routes.jobs import jobs_ns
+    
+    # Add namespaces to API (this creates the Swagger documentation)
+    api.add_namespace(auth_ns, path='/auth')
+    api.add_namespace(users_ns, path='/users')
+    api.add_namespace(companies_ns, path='/companies')
+    api.add_namespace(jobs_ns, path='/jobs')
+    
+    # Register traditional blueprints for backward compatibility
     from app.routes.auth import auth_bp
     from app.routes.companies import companies_bp
     from app.routes.jobs import jobs_bp
@@ -207,13 +293,17 @@ def register_error_handlers(app):
         return jsonify({"error": "Internal server error", "message": "Something went wrong"}), 500
     
     # Handle custom database errors
-    from app.utils.db import DatabaseError, InvalidObjectIdError
-    
-    @app.errorhandler(DatabaseError)
-    def handle_database_error(e):
-        app.logger.error(f"Database error: {str(e)}")
-        return jsonify({"error": "Database error", "message": "Please try again later"}), 500
-    
-    @app.errorhandler(InvalidObjectIdError)
-    def handle_invalid_id_error(e):
-        return jsonify({"error": "Invalid ID", "message": str(e)}), 400
+    try:
+        from app.utils.db import DatabaseError, InvalidObjectIdError
+        
+        @app.errorhandler(DatabaseError)
+        def handle_database_error(e):
+            app.logger.error(f"Database error: {str(e)}")
+            return jsonify({"error": "Database error", "message": "Please try again later"}), 500
+        
+        @app.errorhandler(InvalidObjectIdError)
+        def handle_invalid_id_error(e):
+            return jsonify({"error": "Invalid ID", "message": str(e)}), 400
+    except ImportError:
+        # If custom exceptions don't exist yet, skip them
+        pass
