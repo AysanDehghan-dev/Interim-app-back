@@ -1,5 +1,4 @@
 from app.utils.db import (
-    count_documents,
     delete_one,
     find_by_id,
     find_many,
