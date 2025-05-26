@@ -19,38 +19,155 @@ auth_ns = Namespace('auth', description='Authentication operations')
 
 # Define models for swagger documentation
 user_register_model = auth_ns.model('UserRegister', {
-    'firstName': fields.String(required=True, description='User first name', example='Jean'),
-    'lastName': fields.String(required=True, description='User last name', example='Dupont'),
-    'email': fields.String(required=True, description='User email', example='jean.dupont@example.com'),
-    'password': fields.String(required=True, description='Password (min 6 chars)', example='password123'),
-    'confirmPassword': fields.String(required=True, description='Confirm password', example='password123'),
-    'phone': fields.String(description='Phone number', example='+33 6 12 34 56 78'),
-    'city': fields.String(description='City', example='Lyon'),
-    'country': fields.String(description='Country', example='France'),
+    'firstName': fields.String(
+        required=True, 
+        description='User first name', 
+        example='Marie',
+        default='Marie'
+    ),
+    'lastName': fields.String(
+        required=True, 
+        description='User last name', 
+        example='Martin',
+        default='Martin'
+    ),
+    'email': fields.String(
+        required=True, 
+        description='User email (must be unique)', 
+        example='marie.martin@example.com',
+        default='marie.martin@example.com'
+    ),
+    'password': fields.String(
+        required=True, 
+        description='Password (minimum 6 characters)', 
+        example='mypassword123',
+        default='mypassword123'
+    ),
+    'confirmPassword': fields.String(
+        required=True, 
+        description='Confirm password (must match password)', 
+        example='mypassword123',
+        default='mypassword123'
+    ),
+    'phone': fields.String(
+        description='Phone number', 
+        example='+33 6 98 76 54 32',
+        default='+33 6 98 76 54 32'
+    ),
+    'address': fields.String(
+        description='Home address', 
+        example='123 Rue de la Paix',
+        default='123 Rue de la Paix'
+    ),
+    'city': fields.String(
+        description='City', 
+        example='Paris',
+        default='Paris'
+    ),
+    'country': fields.String(
+        description='Country', 
+        example='France',
+        default='France'
+    ),
 })
 
 user_login_model = auth_ns.model('UserLogin', {
-    'email': fields.String(required=True, description='User email', example='jean.dupont@example.com'),
-    'password': fields.String(required=True, description='Password', example='password123'),
+    'email': fields.String(
+        required=True, 
+        description='User email', 
+        example='jean.dupont@example.com',
+        default='jean.dupont@example.com'
+    ),
+    'password': fields.String(
+        required=True, 
+        description='Password', 
+        example='password',
+        default='password'
+    ),
 })
 
 company_register_model = auth_ns.model('CompanyRegister', {
-    'name': fields.String(required=True, description='Company name', example='TechCorp'),
-    'industry': fields.String(required=True, description='Company industry', example='Technology'),
-    'description': fields.String(required=True, description='Company description', example='Leading tech company specializing in web development'),
-    'email': fields.String(required=True, description='Company email', example='contact@techcorp.com'),
-    'password': fields.String(required=True, description='Password (min 6 chars)', example='password123'),
-    'confirmPassword': fields.String(required=True, description='Confirm password', example='password123'),
-    'website': fields.String(description='Company website', example='https://techcorp.com'),
-    'phone': fields.String(description='Phone number', example='+33 1 23 45 67 89'),
-    'address': fields.String(description='Address', example='50 Rue de Innovation'),
-    'city': fields.String(description='City', example='Lyon'),
-    'country': fields.String(description='Country', example='France'),
+    'name': fields.String(
+        required=True, 
+        description='Company name', 
+        example='InnovateTech Solutions',
+        default='InnovateTech Solutions'
+    ),
+    'industry': fields.String(
+        required=True, 
+        description='Company industry', 
+        example='Software Development',
+        default='Software Development'
+    ),
+    'description': fields.String(
+        required=True, 
+        description='Company description', 
+        example='We are a cutting-edge software development company specializing in web and mobile applications. We create innovative solutions for businesses of all sizes.',
+        default='We are a cutting-edge software development company specializing in web and mobile applications. We create innovative solutions for businesses of all sizes.'
+    ),
+    'email': fields.String(
+        required=True, 
+        description='Company email (must be unique)', 
+        example='contact@innovatetech.com',
+        default='contact@innovatetech.com'
+    ),
+    'password': fields.String(
+        required=True, 
+        description='Password (minimum 6 characters)', 
+        example='companypass123',
+        default='companypass123'
+    ),
+    'confirmPassword': fields.String(
+        required=True, 
+        description='Confirm password (must match)', 
+        example='companypass123',
+        default='companypass123'
+    ),
+    'website': fields.String(
+        description='Company website', 
+        example='https://www.innovatetech.com',
+        default='https://www.innovatetech.com'
+    ),
+    'phone': fields.String(
+        description='Company phone number', 
+        example='+33 1 42 86 83 45',
+        default='+33 1 42 86 83 45'
+    ),
+    'address': fields.String(
+        description='Company address', 
+        example='42 Avenue des Champs-Élysées',
+        default='42 Avenue des Champs-Élysées'
+    ),
+    'city': fields.String(
+        description='City', 
+        example='Paris',
+        default='Paris'
+    ),
+    'country': fields.String(
+        description='Country', 
+        example='France',
+        default='France'
+    ),
+    'logo': fields.String(
+        description='Company logo URL', 
+        example='https://www.innovatetech.com/logo.png',
+        default='https://www.innovatetech.com/logo.png'
+    ),
 })
 
 company_login_model = auth_ns.model('CompanyLogin', {
-    'email': fields.String(required=True, description='Company email', example='contact@techcorp.com'),
-    'password': fields.String(required=True, description='Password', example='password123'),
+    'email': fields.String(
+        required=True, 
+        description='Company email', 
+        example='contact@techcorp.example.com',
+        default='contact@techcorp.example.com'
+    ),
+    'password': fields.String(
+        required=True, 
+        description='Password', 
+        example='password',
+        default='password'
+    ),
 })
 
 # Response models
