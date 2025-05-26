@@ -16,34 +16,148 @@ users_ns = Namespace('users', description='User operations - Requires user authe
 
 # Define models for swagger documentation
 user_profile_update_model = users_ns.model('UserProfileUpdate', {
-    'firstName': fields.String(description='User first name', example='Jean'),
-    'lastName': fields.String(description='User last name', example='Dupont'),
-    'phone': fields.String(description='Phone number', example='+33 6 12 34 56 78'),
-    'address': fields.String(description='Address', example='25 Rue de Paris'),
-    'city': fields.String(description='City', example='Lyon'),
-    'country': fields.String(description='Country', example='France'),
-    'profilePicture': fields.String(description='Profile picture URL', example='https://example.com/avatar.jpg'),
-    'skills': fields.List(fields.String, description='List of skills', example=['JavaScript', 'React', 'Python']),
+    'firstName': fields.String(
+        description='User first name', 
+        example='Marie',
+        default='Marie'
+    ),
+    'lastName': fields.String(
+        description='User last name', 
+        example='Laurent',
+        default='Laurent'
+    ),
+    'phone': fields.String(
+        description='Phone number', 
+        example='+33 6 45 67 89 12',
+        default='+33 6 45 67 89 12'
+    ),
+    'address': fields.String(
+        description='Home address', 
+        example='15 Boulevard Saint-Germain',
+        default='15 Boulevard Saint-Germain'
+    ),
+    'city': fields.String(
+        description='City', 
+        example='Paris',
+        default='Paris'
+    ),
+    'country': fields.String(
+        description='Country', 
+        example='France',
+        default='France'
+    ),
+    'profilePicture': fields.String(
+        description='Profile picture URL', 
+        example='https://randomuser.me/api/portraits/women/5.jpg',
+        default='https://randomuser.me/api/portraits/women/5.jpg'
+    ),
+    'skills': fields.List(
+        fields.String, 
+        description='List of professional skills', 
+        example=[
+            'JavaScript',
+            'React.js',
+            'Node.js',
+            'Python',
+            'MongoDB',
+            'Git',
+            'Agile/Scrum',
+            'Problem Solving'
+        ],
+        default=[
+            'JavaScript',
+            'React.js',
+            'Node.js',
+            'Python',
+            'MongoDB',
+            'Git',
+            'Agile/Scrum',
+            'Problem Solving'
+        ]
+    ),
 })
 
 experience_model = users_ns.model('Experience', {
-    'title': fields.String(required=True, description='Job title', example='Frontend Developer'),
-    'company': fields.String(required=True, description='Company name', example='TechCorp'),
-    'location': fields.String(description='Location', example='Lyon, France'),
-    'startDate': fields.DateTime(required=True, description='Start date', example='2020-01-01T00:00:00Z'),
-    'endDate': fields.DateTime(description='End date (leave empty if current)', example='2022-12-31T00:00:00Z'),
-    'current': fields.Boolean(description='Currently working here', example=False),
-    'description': fields.String(description='Job description', example='Developed web applications using React and TypeScript'),
+    'title': fields.String(
+        required=True, 
+        description='Job title', 
+        example='Full Stack Developer',
+        default='Full Stack Developer'
+    ),
+    'company': fields.String(
+        required=True, 
+        description='Company name', 
+        example='Digital Solutions Inc.',
+        default='Digital Solutions Inc.'
+    ),
+    'location': fields.String(
+        description='Work location', 
+        example='Paris, France',
+        default='Paris, France'
+    ),
+    'startDate': fields.DateTime(
+        required=True, 
+        description='Employment start date', 
+        example='2022-03-01T00:00:00Z',
+        default='2022-03-01T00:00:00Z'
+    ),
+    'endDate': fields.DateTime(
+        description='Employment end date (leave empty if current)', 
+        example='2024-12-31T00:00:00Z',
+        default='2024-12-31T00:00:00Z'
+    ),
+    'current': fields.Boolean(
+        description='Currently working here', 
+        example=False,
+        default=False
+    ),
+    'description': fields.String(
+        description='Detailed job description and achievements', 
+        example='Developed and maintained web applications using React.js and Node.js. Led a team of 3 junior developers. Implemented CI/CD pipelines that reduced deployment time by 40%. Successfully delivered 15+ projects on time and within budget.',
+        default='Developed and maintained web applications using React.js and Node.js. Led a team of 3 junior developers. Implemented CI/CD pipelines that reduced deployment time by 40%. Successfully delivered 15+ projects on time and within budget.'
+    ),
 })
 
 education_model = users_ns.model('Education', {
-    'institution': fields.String(required=True, description='Institution name', example='University of Lyon'),
-    'degree': fields.String(required=True, description='Degree', example='Master'),
-    'field': fields.String(required=True, description='Field of study', example='Computer Science'),
-    'startDate': fields.DateTime(required=True, description='Start date', example='2015-09-01T00:00:00Z'),
-    'endDate': fields.DateTime(description='End date (leave empty if current)', example='2020-06-30T00:00:00Z'),
-    'current': fields.Boolean(description='Currently studying', example=False),
-    'description': fields.String(description='Description', example='Specialized in web development and mobile applications'),
+    'institution': fields.String(
+        required=True, 
+        description='Educational institution name', 
+        example='École Polytechnique',
+        default='École Polytechnique'
+    ),
+    'degree': fields.String(
+        required=True, 
+        description='Degree obtained', 
+        example='Master of Science',
+        default='Master of Science'
+    ),
+    'field': fields.String(
+        required=True, 
+        description='Field of study', 
+        example='Computer Science and Engineering',
+        default='Computer Science and Engineering'
+    ),
+    'startDate': fields.DateTime(
+        required=True, 
+        description='Start date of studies', 
+        example='2018-09-01T00:00:00Z',
+        default='2018-09-01T00:00:00Z'
+    ),
+    'endDate': fields.DateTime(
+        description='End date of studies (leave empty if ongoing)', 
+        example='2022-06-30T00:00:00Z',
+        default='2022-06-30T00:00:00Z'
+    ),
+    'current': fields.Boolean(
+        description='Currently studying', 
+        example=False,
+        default=False
+    ),
+    'description': fields.String(
+        description='Additional details about the education', 
+        example='Specialized in software engineering and artificial intelligence. Graduated Magna Cum Laude with a thesis on machine learning applications in web development.',
+        default='Specialized in software engineering and artificial intelligence. Graduated Magna Cum Laude with a thesis on machine learning applications in web development.'
+    ),
 })
 
 error_model = users_ns.model('Error', {
