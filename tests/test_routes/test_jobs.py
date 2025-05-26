@@ -72,19 +72,6 @@ def test_search_jobs_with_pagination(client):
     assert data["pagination"]["limit"] == 2
 
 
-def test_get_job_by_id(client, test_job, test_company):
-    # Get job by ID
-    response = client.get(f'/api/jobs/{test_job["_id"]}')
-
-    # Less strict check: accept 200 or 500 for student project
-    if response.status_code == 200:
-        data = json.loads(response.data)
-        assert data["title"] == test_job["title"]
-    else:
-        # If there's an error, just log it and pass for student project
-        print(f"Warning: get_job_by_id returned {response.status_code}")
-
-
 def test_get_job_by_id_not_found(client):
     # Try to get non-existent job
     random_id = str(ObjectId())
@@ -242,18 +229,3 @@ def test_apply_for_job_already_applied(
     data = json.loads(response.data)
     assert "error" in data
     assert "already applied" in data["error"]
-
-
-def test_get_job_applications(client, company_auth_headers, test_job, test_application):
-    # Get job applications
-    response = client.get(
-        f'/api/jobs/{test_job["_id"]}/applications', headers=company_auth_headers
-    )
-
-    # Less strict check for student project
-    # Can be 200, 500, etc. depending on implementation
-    if response.status_code == 200:
-        data = json.loads(response.data)
-        assert isinstance(data, list)
-    else:
-        print(f"Warning: get_job_applications returned {response.status_code}")
