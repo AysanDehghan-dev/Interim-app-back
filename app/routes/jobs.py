@@ -19,26 +19,100 @@ jobs_ns = Namespace('jobs', description='Job operations')
 
 # Define models for swagger documentation
 salary_model = jobs_ns.model('Salary', {
-    'min': fields.Integer(required=True, description='Minimum salary', example=40000),
-    'max': fields.Integer(required=True, description='Maximum salary', example=55000),
-    'currency': fields.String(required=True, description='Currency', example='EUR'),
+    'min': fields.Integer(
+        required=True, 
+        description='Minimum salary (annual)', 
+        example=45000,
+        default=45000
+    ),
+    'max': fields.Integer(
+        required=True, 
+        description='Maximum salary (annual)', 
+        example=65000,
+        default=65000
+    ),
+    'currency': fields.String(
+        required=True, 
+        description='Currency code', 
+        example='EUR',
+        default='EUR'
+    ),
 })
 
 job_create_model = jobs_ns.model('JobCreate', {
-    'title': fields.String(required=True, description='Job title', example='Frontend Developer'),
-    'description': fields.String(required=True, description='Job description', example='We are looking for a skilled frontend developer...'),
-    'requirements': fields.List(fields.String, required=True, description='Job requirements', 
-                               example=['3+ years React experience', 'JavaScript/TypeScript', 'HTML/CSS']),
-    'location': fields.String(required=True, description='Job location', example='Lyon, France'),
-    'type': fields.String(required=True, description='Job type', 
-                         enum=['FULL_TIME', 'PART_TIME', 'CONTRACT', 'TEMPORARY', 'INTERNSHIP'],
-                         example='FULL_TIME'),
-    'salary': fields.Nested(salary_model, description='Salary information'),
+    'title': fields.String(
+        required=True, 
+        description='Job title', 
+        example='Senior React Developer',
+        default='Senior React Developer'
+    ),
+    'description': fields.String(
+        required=True, 
+        description='Detailed job description', 
+        example='We are seeking a talented Senior React Developer to join our dynamic team. You will be responsible for developing user interface components and implementing them following well-known React.js workflows. You will ensure that these components and the overall application are robust and easy to maintain.',
+        default='We are seeking a talented Senior React Developer to join our dynamic team. You will be responsible for developing user interface components and implementing them following well-known React.js workflows. You will ensure that these components and the overall application are robust and easy to maintain.'
+    ),
+    'requirements': fields.List(
+        fields.String, 
+        required=True, 
+        description='List of job requirements', 
+        example=[
+            '5+ years of experience with React.js',
+            'Strong proficiency in JavaScript, HTML5, and CSS3',
+            'Experience with Redux or Context API',
+            'Knowledge of RESTful APIs and GraphQL',
+            'Experience with Git version control',
+            'Bachelor degree in Computer Science or equivalent',
+            'Excellent problem-solving skills',
+            'Good communication skills in French and English'
+        ],
+        default=[
+            '5+ years of experience with React.js',
+            'Strong proficiency in JavaScript, HTML5, and CSS3',
+            'Experience with Redux or Context API',
+            'Knowledge of RESTful APIs and GraphQL',
+            'Experience with Git version control',
+            'Bachelor degree in Computer Science or equivalent',
+            'Excellent problem-solving skills',
+            'Good communication skills in French and English'
+        ]
+    ),
+    'location': fields.String(
+        required=True, 
+        description='Job location', 
+        example='Lyon, France (Hybrid)',
+        default='Lyon, France (Hybrid)'
+    ),
+    'type': fields.String(
+        required=True, 
+        description='Job type', 
+        enum=['FULL_TIME', 'PART_TIME', 'CONTRACT', 'TEMPORARY', 'INTERNSHIP'],
+        example='FULL_TIME',
+        default='FULL_TIME'
+    ),
+    'salary': fields.Nested(
+        salary_model, 
+        description='Salary information',
+        required=False
+    ),
+    'startDate': fields.DateTime(
+        description='Preferred start date', 
+        example='2025-06-01T08:00:00Z',
+        default='2025-06-01T08:00:00Z'
+    ),
 })
 
 job_application_model = jobs_ns.model('JobApplication', {
-    'coverLetter': fields.String(description='Cover letter', example='I am very interested in this position because...'),
-    'resume': fields.String(description='Resume/CV content', example='My resume content...'),
+    'coverLetter': fields.String(
+        description='Cover letter explaining your motivation', 
+        example='Dear Hiring Manager,\n\nI am writing to express my strong interest in the Senior React Developer position at your company. With over 5 years of experience in React development and a passion for creating exceptional user experiences, I believe I would be a valuable addition to your team.\n\nMy experience includes:\n- Building scalable React applications\n- Working with modern development tools\n- Collaborating in agile environments\n\nI am excited about the opportunity to contribute to your innovative projects and would welcome the chance to discuss how my skills align with your needs.\n\nBest regards,\n[Your Name]',
+        default='Dear Hiring Manager,\n\nI am writing to express my strong interest in the Senior React Developer position at your company. With over 5 years of experience in React development and a passion for creating exceptional user experiences, I believe I would be a valuable addition to your team.\n\nMy experience includes:\n- Building scalable React applications\n- Working with modern development tools\n- Collaborating in agile environments\n\nI am excited about the opportunity to contribute to your innovative projects and would welcome the chance to discuss how my skills align with your needs.\n\nBest regards,\n[Your Name]'
+    ),
+    'resume': fields.String(
+        description='Resume/CV content or URL', 
+        example='https://myportfolio.com/resume.pdf',
+        default='https://myportfolio.com/resume.pdf'
+    ),
 })
 
 pagination_model = jobs_ns.model('Pagination', {
