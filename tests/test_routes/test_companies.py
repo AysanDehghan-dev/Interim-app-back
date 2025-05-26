@@ -12,15 +12,15 @@ def test_get_companies(client):
     # Should always return 200, even if no companies exist
     assert response.status_code == 200
     data = json.loads(response.data)
-    
+
     # Check the response structure matches your paginated API
     assert isinstance(data, dict)
     assert "companies" in data
     assert "pagination" in data
-    
+
     # Check companies is a list (could be empty)
     assert isinstance(data["companies"], list)
-    
+
     # Check pagination structure
     pagination = data["pagination"]
     assert isinstance(pagination, dict)
@@ -38,16 +38,16 @@ def test_get_companies_with_pagination(client):
     # Check response
     assert response.status_code == 200
     data = json.loads(response.data)
-    
+
     # Check response structure
     assert isinstance(data, dict)
     assert "companies" in data
     assert "pagination" in data
-    
+
     # Check pagination values
     assert data["pagination"]["page"] == 1
     assert data["pagination"]["limit"] == 2
-    
+
     # Companies list should not exceed limit
     assert len(data["companies"]) <= 2
 
@@ -186,13 +186,13 @@ def test_update_company_profile_with_email_password(client, company_auth_headers
 def test_update_company_profile_unauthorized(client):
     """Test updating company profile without authentication"""
     update_data = {"name": "Unauthorized Update"}
-    
+
     response = client.put(
         "/api/companies/profile",
         data=json.dumps(update_data),
         content_type="application/json",
     )
-    
+
     assert response.status_code == 401
     data = json.loads(response.data)
     assert "error" in data
@@ -201,14 +201,14 @@ def test_update_company_profile_unauthorized(client):
 def test_update_company_profile_with_user_token(client, auth_headers):
     """Test updating company profile with user token (should fail)"""
     update_data = {"name": "User Trying to Update Company"}
-    
+
     response = client.put(
         "/api/companies/profile",
         data=json.dumps(update_data),
         content_type="application/json",
         headers=auth_headers,
     )
-    
+
     assert response.status_code == 403
     data = json.loads(response.data)
     assert "error" in data
@@ -223,7 +223,7 @@ def test_get_company_jobs(client, company_auth_headers, test_job):
     assert response.status_code == 200
     data = json.loads(response.data)
     assert isinstance(data, list)
-    
+
     # If there are jobs, check their structure
     if len(data) > 0:
         job = data[0]
@@ -236,7 +236,7 @@ def test_get_company_jobs(client, company_auth_headers, test_job):
 def test_get_company_jobs_unauthorized(client):
     """Test getting company jobs without authentication"""
     response = client.get("/api/companies/jobs")
-    
+
     assert response.status_code == 401
     data = json.loads(response.data)
     assert "error" in data
@@ -245,7 +245,7 @@ def test_get_company_jobs_unauthorized(client):
 def test_get_company_jobs_with_user_token(client, auth_headers):
     """Test getting company jobs with user token (should fail)"""
     response = client.get("/api/companies/jobs", headers=auth_headers)
-    
+
     assert response.status_code == 403
     data = json.loads(response.data)
     assert "error" in data
@@ -269,7 +269,7 @@ def test_get_jobs_by_company(client, test_company, test_job):
             assert job["title"] == test_job["title"]
             assert job["location"] == test_job["location"]
             assert job["type"] == test_job["type"]
-        
+
         # Check general job structure
         for job in data:
             assert "id" in job
@@ -294,7 +294,7 @@ def test_get_jobs_by_company_not_found(client):
 def test_get_jobs_by_company_invalid_id(client):
     """Test getting jobs with invalid company ID"""
     response = client.get("/api/companies/invalid-id/jobs")
-    
+
     # Should handle invalid ObjectId gracefully
     assert response.status_code in [400, 404]
     data = json.loads(response.data)

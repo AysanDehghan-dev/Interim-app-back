@@ -85,7 +85,6 @@ def test_update_profile_with_password(client, auth_headers):
     assert "password" not in data
 
 
-
 def test_add_experience(client, auth_headers):
     # Experience data
     experience_data = {
