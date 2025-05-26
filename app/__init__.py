@@ -63,6 +63,14 @@ def create_app():
             <li><strong>Test:</strong> Now you can use protected endpoints!</li>
         </ol>
         
+        <h3>📝 How to Test Endpoints:</h3>
+        <ol>
+            <li><strong>Click "Try it out"</strong> on any endpoint</li>
+            <li><strong>Modify the example data</strong> in the text fields</li>
+            <li><strong>Click "Execute"</strong> to test</li>
+            <li><strong>See the response</strong> below</li>
+        </ol>
+        
         <h3>📋 Test Accounts:</h3>
         <p><strong>User:</strong> jean.dupont@example.com / password</p>
         <p><strong>Company:</strong> contact@techcorp.example.com / password</p>
@@ -72,8 +80,17 @@ def create_app():
         ''',
         doc='/api/docs/',
         prefix='/api',
-        # Make all sections expanded by default
-        doc_expansion='full'
+        doc_expansion='full',
+        # Enable "Try it out" by default
+        default_swagger_ui_config={
+            'tryItOutEnabled': True,
+            'defaultModelsExpandDepth': 2,
+            'defaultModelExpandDepth': 2,
+            'displayRequestDuration': True,
+            'filter': True,
+            'showExtensions': True,
+            'showCommonExtensions': True
+        }
     )
     
     # Configure Swagger security with clear instructions
