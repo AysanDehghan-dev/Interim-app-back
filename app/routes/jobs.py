@@ -3,7 +3,7 @@ import math
 from bson import ObjectId
 from flask import Blueprint, jsonify, request
 from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
-from flask_restx import Resource, Namespace, fields
+from flask_restx import Namespace, Resource, fields
 from marshmallow import ValidationError
 
 from app.models.application import Application
@@ -15,134 +15,152 @@ from app.schemas.job_schema import JobSchema, JobSearchSchema
 jobs_bp = Blueprint("jobs", __name__)
 
 # Create namespace for swagger documentation
-jobs_ns = Namespace('jobs', description='Job operations')
+jobs_ns = Namespace("jobs", description="Job operations")
 
 # Define models for swagger documentation
-salary_model = jobs_ns.model('Salary', {
-    'min': fields.Integer(
-        required=True, 
-        description='Minimum salary (annual)', 
-        example=45000,
-        default=45000
-    ),
-    'max': fields.Integer(
-        required=True, 
-        description='Maximum salary (annual)', 
-        example=65000,
-        default=65000
-    ),
-    'currency': fields.String(
-        required=True, 
-        description='Currency code', 
-        example='EUR',
-        default='EUR'
-    ),
-})
+salary_model = jobs_ns.model(
+    "Salary",
+    {
+        "min": fields.Integer(
+            required=True,
+            description="Minimum salary (annual)",
+            example=45000,
+            default=45000,
+        ),
+        "max": fields.Integer(
+            required=True,
+            description="Maximum salary (annual)",
+            example=65000,
+            default=65000,
+        ),
+        "currency": fields.String(
+            required=True, description="Currency code", example="EUR", default="EUR"
+        ),
+    },
+)
 
-job_create_model = jobs_ns.model('JobCreate', {
-    'title': fields.String(
-        required=True, 
-        description='Job title', 
-        example='Senior React Developer',
-        default='Senior React Developer'
-    ),
-    'description': fields.String(
-        required=True, 
-        description='Detailed job description', 
-        example='We are seeking a talented Senior React Developer to join our dynamic team. You will be responsible for developing user interface components and implementing them following well-known React.js workflows. You will ensure that these components and the overall application are robust and easy to maintain.',
-        default='We are seeking a talented Senior React Developer to join our dynamic team. You will be responsible for developing user interface components and implementing them following well-known React.js workflows. You will ensure that these components and the overall application are robust and easy to maintain.'
-    ),
-    'requirements': fields.List(
-        fields.String, 
-        required=True, 
-        description='List of job requirements', 
-        example=[
-            '5+ years of experience with React.js',
-            'Strong proficiency in JavaScript, HTML5, and CSS3',
-            'Experience with Redux or Context API',
-            'Knowledge of RESTful APIs and GraphQL',
-            'Experience with Git version control',
-            'Bachelor degree in Computer Science or equivalent',
-            'Excellent problem-solving skills',
-            'Good communication skills in French and English'
-        ],
-        default=[
-            '5+ years of experience with React.js',
-            'Strong proficiency in JavaScript, HTML5, and CSS3',
-            'Experience with Redux or Context API',
-            'Knowledge of RESTful APIs and GraphQL',
-            'Experience with Git version control',
-            'Bachelor degree in Computer Science or equivalent',
-            'Excellent problem-solving skills',
-            'Good communication skills in French and English'
-        ]
-    ),
-    'location': fields.String(
-        required=True, 
-        description='Job location', 
-        example='Lyon, France (Hybrid)',
-        default='Lyon, France (Hybrid)'
-    ),
-    'type': fields.String(
-        required=True, 
-        description='Job type', 
-        enum=['FULL_TIME', 'PART_TIME', 'CONTRACT', 'TEMPORARY', 'INTERNSHIP'],
-        example='FULL_TIME',
-        default='FULL_TIME'
-    ),
-    'salary': fields.Nested(
-        salary_model, 
-        description='Salary information',
-        required=False
-    ),
-    'startDate': fields.DateTime(
-        description='Preferred start date', 
-        example='2025-06-01T08:00:00Z',
-        default='2025-06-01T08:00:00Z'
-    ),
-})
+job_create_model = jobs_ns.model(
+    "JobCreate",
+    {
+        "title": fields.String(
+            required=True,
+            description="Job title",
+            example="Senior React Developer",
+            default="Senior React Developer",
+        ),
+        "description": fields.String(
+            required=True,
+            description="Detailed job description",
+            example="We are seeking a talented Senior React Developer to join our dynamic team. You will be responsible for developing user interface components and implementing them following well-known React.js workflows. You will ensure that these components and the overall application are robust and easy to maintain.",
+            default="We are seeking a talented Senior React Developer to join our dynamic team. You will be responsible for developing user interface components and implementing them following well-known React.js workflows. You will ensure that these components and the overall application are robust and easy to maintain.",
+        ),
+        "requirements": fields.List(
+            fields.String,
+            required=True,
+            description="List of job requirements",
+            example=[
+                "5+ years of experience with React.js",
+                "Strong proficiency in JavaScript, HTML5, and CSS3",
+                "Experience with Redux or Context API",
+                "Knowledge of RESTful APIs and GraphQL",
+                "Experience with Git version control",
+                "Bachelor degree in Computer Science or equivalent",
+                "Excellent problem-solving skills",
+                "Good communication skills in French and English",
+            ],
+            default=[
+                "5+ years of experience with React.js",
+                "Strong proficiency in JavaScript, HTML5, and CSS3",
+                "Experience with Redux or Context API",
+                "Knowledge of RESTful APIs and GraphQL",
+                "Experience with Git version control",
+                "Bachelor degree in Computer Science or equivalent",
+                "Excellent problem-solving skills",
+                "Good communication skills in French and English",
+            ],
+        ),
+        "location": fields.String(
+            required=True,
+            description="Job location",
+            example="Lyon, France (Hybrid)",
+            default="Lyon, France (Hybrid)",
+        ),
+        "type": fields.String(
+            required=True,
+            description="Job type",
+            enum=["FULL_TIME", "PART_TIME", "CONTRACT", "TEMPORARY", "INTERNSHIP"],
+            example="FULL_TIME",
+            default="FULL_TIME",
+        ),
+        "salary": fields.Nested(
+            salary_model, description="Salary information", required=False
+        ),
+        "startDate": fields.DateTime(
+            description="Preferred start date",
+            example="2025-06-01T08:00:00Z",
+            default="2025-06-01T08:00:00Z",
+        ),
+    },
+)
 
-job_application_model = jobs_ns.model('JobApplication', {
-    'coverLetter': fields.String(
-        description='Cover letter explaining your motivation', 
-        example='Dear Hiring Manager,\n\nI am writing to express my strong interest in the Senior React Developer position at your company. With over 5 years of experience in React development and a passion for creating exceptional user experiences, I believe I would be a valuable addition to your team.\n\nMy experience includes:\n- Building scalable React applications\n- Working with modern development tools\n- Collaborating in agile environments\n\nI am excited about the opportunity to contribute to your innovative projects and would welcome the chance to discuss how my skills align with your needs.\n\nBest regards,\n[Your Name]',
-        default='Dear Hiring Manager,\n\nI am writing to express my strong interest in the Senior React Developer position at your company. With over 5 years of experience in React development and a passion for creating exceptional user experiences, I believe I would be a valuable addition to your team.\n\nMy experience includes:\n- Building scalable React applications\n- Working with modern development tools\n- Collaborating in agile environments\n\nI am excited about the opportunity to contribute to your innovative projects and would welcome the chance to discuss how my skills align with your needs.\n\nBest regards,\n[Your Name]'
-    ),
-    'resume': fields.String(
-        description='Resume/CV content or URL', 
-        example='https://myportfolio.com/resume.pdf',
-        default='https://myportfolio.com/resume.pdf'
-    ),
-})
+job_application_model = jobs_ns.model(
+    "JobApplication",
+    {
+        "coverLetter": fields.String(
+            description="Cover letter explaining your motivation",
+            example="Dear Hiring Manager,\n\nI am writing to express my strong interest in the Senior React Developer position at your company. With over 5 years of experience in React development and a passion for creating exceptional user experiences, I believe I would be a valuable addition to your team.\n\nMy experience includes:\n- Building scalable React applications\n- Working with modern development tools\n- Collaborating in agile environments\n\nI am excited about the opportunity to contribute to your innovative projects and would welcome the chance to discuss how my skills align with your needs.\n\nBest regards,\n[Your Name]",
+            default="Dear Hiring Manager,\n\nI am writing to express my strong interest in the Senior React Developer position at your company. With over 5 years of experience in React development and a passion for creating exceptional user experiences, I believe I would be a valuable addition to your team.\n\nMy experience includes:\n- Building scalable React applications\n- Working with modern development tools\n- Collaborating in agile environments\n\nI am excited about the opportunity to contribute to your innovative projects and would welcome the chance to discuss how my skills align with your needs.\n\nBest regards,\n[Your Name]",
+        ),
+        "resume": fields.String(
+            description="Resume/CV content or URL",
+            example="https://myportfolio.com/resume.pdf",
+            default="https://myportfolio.com/resume.pdf",
+        ),
+    },
+)
 
-pagination_model = jobs_ns.model('Pagination', {
-    'total': fields.Integer(description='Total number of items'),
-    'page': fields.Integer(description='Current page'),
-    'limit': fields.Integer(description='Items per page'),
-    'pages': fields.Integer(description='Total pages'),
-})
+pagination_model = jobs_ns.model(
+    "Pagination",
+    {
+        "total": fields.Integer(description="Total number of items"),
+        "page": fields.Integer(description="Current page"),
+        "limit": fields.Integer(description="Items per page"),
+        "pages": fields.Integer(description="Total pages"),
+    },
+)
 
-jobs_response_model = jobs_ns.model('JobsResponse', {
-    'jobs': fields.List(fields.Raw, description='List of jobs'),
-    'pagination': fields.Nested(pagination_model),
-})
+jobs_response_model = jobs_ns.model(
+    "JobsResponse",
+    {
+        "jobs": fields.List(fields.Raw, description="List of jobs"),
+        "pagination": fields.Nested(pagination_model),
+    },
+)
 
-error_model = jobs_ns.model('Error', {
-    'error': fields.String(description='Error type'),
-    'message': fields.String(description='Error message'),
-})
+error_model = jobs_ns.model(
+    "Error",
+    {
+        "error": fields.String(description="Error type"),
+        "message": fields.String(description="Error message"),
+    },
+)
+
 
 # Register routes with swagger documentation
-@jobs_ns.route('')
+@jobs_ns.route("")
 class JobsList(Resource):
-    @jobs_ns.doc('search_jobs')
-    @jobs_ns.param('keyword', 'Search keyword for title/description')
-    @jobs_ns.param('location', 'Job location filter')
-    @jobs_ns.param('type', 'Job type filter', enum=['FULL_TIME', 'PART_TIME', 'CONTRACT', 'TEMPORARY', 'INTERNSHIP'])
-    @jobs_ns.param('page', 'Page number (default: 1)')
-    @jobs_ns.param('limit', 'Items per page (default: 10)')
-    @jobs_ns.response(200, 'Success', jobs_response_model)
-    @jobs_ns.response(400, 'Validation error', error_model)
+    @jobs_ns.doc("search_jobs")
+    @jobs_ns.param("keyword", "Search keyword for title/description")
+    @jobs_ns.param("location", "Job location filter")
+    @jobs_ns.param(
+        "type",
+        "Job type filter",
+        enum=["FULL_TIME", "PART_TIME", "CONTRACT", "TEMPORARY", "INTERNSHIP"],
+    )
+    @jobs_ns.param("page", "Page number (default: 1)")
+    @jobs_ns.param("limit", "Items per page (default: 10)")
+    @jobs_ns.response(200, "Success", jobs_response_model)
+    @jobs_ns.response(400, "Validation error", error_model)
     def get(self):
         """Search jobs with filters"""
         try:
@@ -179,10 +197,10 @@ class JobsList(Resource):
             return {"error": str(e)}, 500
 
     @jobs_ns.expect(job_create_model)
-    @jobs_ns.doc('create_job', security='Bearer')
-    @jobs_ns.response(201, 'Job created successfully')
-    @jobs_ns.response(403, 'Only companies can create jobs', error_model)
-    @jobs_ns.response(400, 'Validation error', error_model)
+    @jobs_ns.doc("create_job", security="Bearer")
+    @jobs_ns.response(201, "Job created successfully")
+    @jobs_ns.response(403, "Only companies can create jobs", error_model)
+    @jobs_ns.response(400, "Validation error", error_model)
     @jwt_required()
     def post(self):
         """Create a new job (company only)"""
@@ -219,12 +237,13 @@ class JobsList(Resource):
         except Exception as e:
             return {"error": str(e)}, 500
 
-@jobs_ns.route('/<string:job_id>')
-@jobs_ns.param('job_id', 'Job ID')
+
+@jobs_ns.route("/<string:job_id>")
+@jobs_ns.param("job_id", "Job ID")
 class JobDetail(Resource):
-    @jobs_ns.doc('get_job')
-    @jobs_ns.response(200, 'Success')
-    @jobs_ns.response(404, 'Job not found', error_model)
+    @jobs_ns.doc("get_job")
+    @jobs_ns.response(200, "Success")
+    @jobs_ns.response(404, "Job not found", error_model)
     def get(self, job_id):
         """Get job details by ID"""
         try:
@@ -247,10 +266,10 @@ class JobDetail(Resource):
             return {"error": str(e)}, 500
 
     @jobs_ns.expect(job_create_model)
-    @jobs_ns.doc('update_job', security='Bearer')
-    @jobs_ns.response(200, 'Job updated successfully')
-    @jobs_ns.response(403, 'Only job owner can update', error_model)
-    @jobs_ns.response(404, 'Job not found', error_model)
+    @jobs_ns.doc("update_job", security="Bearer")
+    @jobs_ns.response(200, "Job updated successfully")
+    @jobs_ns.response(403, "Only job owner can update", error_model)
+    @jobs_ns.response(404, "Job not found", error_model)
     @jwt_required()
     def put(self, job_id):
         """Update a job (company only)"""
@@ -295,15 +314,16 @@ class JobDetail(Resource):
         except Exception as e:
             return {"error": str(e)}, 500
 
-@jobs_ns.route('/<string:job_id>/apply')
-@jobs_ns.param('job_id', 'Job ID')
+
+@jobs_ns.route("/<string:job_id>/apply")
+@jobs_ns.param("job_id", "Job ID")
 class JobApplication(Resource):
     @jobs_ns.expect(job_application_model)
-    @jobs_ns.doc('apply_job', security='Bearer')
-    @jobs_ns.response(201, 'Application submitted successfully')
-    @jobs_ns.response(400, 'Already applied or validation error', error_model)
-    @jobs_ns.response(403, 'Only users can apply', error_model)
-    @jobs_ns.response(404, 'Job not found', error_model)
+    @jobs_ns.doc("apply_job", security="Bearer")
+    @jobs_ns.response(201, "Application submitted successfully")
+    @jobs_ns.response(400, "Already applied or validation error", error_model)
+    @jobs_ns.response(403, "Only users can apply", error_model)
+    @jobs_ns.response(404, "Job not found", error_model)
     @jwt_required()
     def post(self, job_id):
         """Apply for a job (user only)"""
@@ -330,7 +350,10 @@ class JobApplication(Resource):
                 return {"error": "You have already applied for this job"}, 400
 
             # Create application data
-            application_data = {"job_id": ObjectId(job_id), "user_id": ObjectId(user_id)}
+            application_data = {
+                "job_id": ObjectId(job_id),
+                "user_id": ObjectId(user_id),
+            }
 
             # Add cover letter if provided
             if request.json and "coverLetter" in request.json:
@@ -354,13 +377,14 @@ class JobApplication(Resource):
         except Exception as e:
             return {"error": str(e)}, 500
 
-@jobs_ns.route('/<string:job_id>/applications')
-@jobs_ns.param('job_id', 'Job ID')
+
+@jobs_ns.route("/<string:job_id>/applications")
+@jobs_ns.param("job_id", "Job ID")
 class JobApplicationsList(Resource):
-    @jobs_ns.doc('get_job_applications', security='Bearer')
-    @jobs_ns.response(200, 'Success')
-    @jobs_ns.response(403, 'Only job owner can view applications', error_model)
-    @jobs_ns.response(404, 'Job not found', error_model)
+    @jobs_ns.doc("get_job_applications", security="Bearer")
+    @jobs_ns.response(200, "Success")
+    @jobs_ns.response(403, "Only job owner can view applications", error_model)
+    @jobs_ns.response(404, "Job not found", error_model)
     @jwt_required()
     def get(self, job_id):
         """Get applications for a specific job (company only)"""
@@ -383,7 +407,9 @@ class JobApplicationsList(Resource):
 
             # Check if the job belongs to the authenticated company
             if str(job["company_id"]) != company_id:
-                return {"error": "You do not have permission to view this job's applications"}, 403
+                return {
+                    "error": "You do not have permission to view this job's applications"
+                }, 403
 
             # Get applications for this job
             applications = Application.find_by_job(job_id)
@@ -404,16 +430,19 @@ class JobApplicationsList(Resource):
         except Exception as e:
             return {"error": str(e)}, 500
 
+
 # Keep the original Flask routes for backward compatibility
 @jobs_bp.route("", methods=["GET"])
 def search_jobs():
     """Search jobs with filters"""
     return JobsList().get()
 
+
 @jobs_bp.route("/<job_id>", methods=["GET"])
 def get_job(job_id):
     """Get job details by ID"""
     return JobDetail().get(job_id)
+
 
 @jobs_bp.route("", methods=["POST"])
 @jwt_required()
@@ -421,17 +450,20 @@ def create_job():
     """Create a new job (company only)"""
     return JobsList().post()
 
+
 @jobs_bp.route("/<job_id>", methods=["PUT"])
 @jwt_required()
 def update_job(job_id):
     """Update a job (company only)"""
     return JobDetail().put(job_id)
 
+
 @jobs_bp.route("/<job_id>/apply", methods=["POST"])
 @jwt_required()
 def apply_for_job(job_id):
     """Apply for a job (user only)"""
     return JobApplication().post(job_id)
+
 
 @jobs_bp.route("/<job_id>/applications", methods=["GET"])
 @jwt_required()
