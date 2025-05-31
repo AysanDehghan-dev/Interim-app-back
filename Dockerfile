@@ -20,7 +20,7 @@ RUN poetry install --without dev --no-root
 COPY . .
 
 # Expose the port the app will run on
-EXPOSE 5050
+EXPOSE 5000
 
 # Command to run the application
-CMD ["gunicorn", "--bind", "0.0.0.0:5050", "wsgi:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "wsgi:app"]
