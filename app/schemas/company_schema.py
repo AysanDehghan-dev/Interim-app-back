@@ -1,11 +1,12 @@
-from marshmallow import fields, validate, validates_schema
 from marshmallow import ValidationError as MarshmallowValidationError
+from marshmallow import fields, validate, validates_schema
 
-from app.schemas.base import BaseSchema, TimestampMixin, PhoneField, URLField
+from app.schemas.base import BaseSchema, PhoneField, TimestampMixin, URLField
 
 
 class CompanySchema(BaseSchema, TimestampMixin):
     """Schema for company data"""
+
     id = fields.Str(dump_only=True)
     name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
     industry = fields.Str(required=True, validate=validate.Length(min=1, max=50))
@@ -23,15 +24,19 @@ class CompanySchema(BaseSchema, TimestampMixin):
 
 class CompanyLoginSchema(BaseSchema):
     """Schema for company login"""
+
     email = fields.Email(required=True)
     password = fields.Str(required=True, validate=validate.Length(min=1))
 
 
 class CompanyRegisterSchema(CompanySchema):
     """Schema for company registration"""
+
     password = fields.Str(required=True, validate=validate.Length(min=6, max=128))
-    confirm_password = fields.Str(data_key="confirmPassword", required=True, load_only=True)
-    
+    confirm_password = fields.Str(
+        data_key="confirmPassword", required=True, load_only=True
+    )
+
     @validates_schema
     def validate_passwords(self, data, **kwargs):
         """Validate that passwords match"""
@@ -41,6 +46,7 @@ class CompanyRegisterSchema(CompanySchema):
 
 class CompanyUpdateSchema(BaseSchema):
     """Schema for updating company data (excludes password)"""
+
     name = fields.Str(validate=validate.Length(min=1, max=100))
     industry = fields.Str(validate=validate.Length(min=1, max=50))
     description = fields.Str(validate=validate.Length(min=10, max=2000))
