@@ -4,7 +4,6 @@ from typing import Dict, Optional, Union
 
 from flask import current_app
 from flask_jwt_extended import create_access_token, create_refresh_token
-from passlib.exc import HashError
 from passlib.hash import pbkdf2_sha256
 
 logger = logging.getLogger(__name__)
@@ -41,7 +40,7 @@ def verify_password(password: str, hashed_password: str) -> bool:
         logger.debug(f"Password verification result: {is_valid}")
         return is_valid
 
-    except (HashError, ValueError) as e:
+    except (ValueError, Exception) as e:
         logger.warning(f"Password verification failed: {str(e)}")
         return False
     except Exception as e:
