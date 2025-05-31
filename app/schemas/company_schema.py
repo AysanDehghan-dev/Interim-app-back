@@ -1,66 +1,52 @@
-from bson import ObjectId
-from marshmallow import (
-    Schema,
-    ValidationError,
-    fields,
-    post_load,
-    pre_dump,
-    validate,
-    validates_schema,
-)
+from marshmallow import fields, validate, validates_schema
+from marshmallow import ValidationError as MarshmallowValidationError
+
+from app.schemas.base import BaseSchema, TimestampMixin, PhoneField, URLField
 
 
-class CompanySchema(Schema):
-    id = fields.Str()
-    name = fields.Str(required=True, validate=validate.Length(min=1))
-    industry = fields.Str(required=True)
-    description = fields.Str(required=True)
+class CompanySchema(BaseSchema, TimestampMixin):
+    """Schema for company data"""
+    id = fields.Str(dump_only=True)
+    name = fields.Str(required=True, validate=validate.Length(min=1, max=100))
+    industry = fields.Str(required=True, validate=validate.Length(min=1, max=50))
+    description = fields.Str(required=True, validate=validate.Length(min=10, max=2000))
     logo = fields.Str()
-    website = fields.Str()
+    website = URLField()
     email = fields.Email(required=True)
-    password = fields.Str(load_only=True, validate=validate.Length(min=6))
-    phone = fields.Str()
-    address = fields.Str()
-    city = fields.Str()
-    country = fields.Str()
+    password = fields.Str(load_only=True, validate=validate.Length(min=6, max=128))
+    phone = PhoneField()
+    address = fields.Str(validate=validate.Length(max=200))
+    city = fields.Str(validate=validate.Length(max=50))
+    country = fields.Str(validate=validate.Length(max=50))
     jobs = fields.List(fields.Str(), dump_only=True)
-    createdAt = fields.DateTime(attribute="created_at", dump_only=True)
-    updatedAt = fields.DateTime(attribute="updated_at", dump_only=True)
-
-    # Convert keys from snake_case to camelCase
-    class Meta:
-        ordered = True
-
-    @pre_dump
-    def prepare_data(self, data, **kwargs):
-        """Convert ObjectId to string and prepare data for serialization"""
-        if data and "_id" in data:
-            data["id"] = str(data["_id"])
-
-        # Convert job ObjectId list to string list
-        if data and "jobs" in data:
-            data["jobs"] = [str(job_id) for job_id in data["jobs"]]
-
-        return data
 
 
-class CompanyLoginSchema(Schema):
+class CompanyLoginSchema(BaseSchema):
+    """Schema for company login"""
     email = fields.Email(required=True)
-    password = fields.Str(required=True, validate=validate.Length(min=6))
-
-    class Meta:
-        ordered = True
+    password = fields.Str(required=True, validate=validate.Length(min=1))
 
 
 class CompanyRegisterSchema(CompanySchema):
-    password = fields.Str(required=True, validate=validate.Length(min=6))
-    confirmPassword = fields.Str(required=True)
-
+    """Schema for company registration"""
+    password = fields.Str(required=True, validate=validate.Length(min=6, max=128))
+    confirm_password = fields.Str(data_key="confirmPassword", required=True, load_only=True)
+    
     @validates_schema
     def validate_passwords(self, data, **kwargs):
-        """Validate that password and confirmPassword match"""
-        if data.get("password") != data.get("confirmPassword"):
-            raise ValidationError("Passwords must match", "confirmPassword")
+        """Validate that passwords match"""
+        if data.get("password") != data.get("confirm_password"):
+            raise MarshmallowValidationError("Passwords must match", "confirm_password")
 
-    class Meta:
-        ordered = True
+
+class CompanyUpdateSchema(BaseSchema):
+    """Schema for updating company data (excludes password)"""
+    name = fields.Str(validate=validate.Length(min=1, max=100))
+    industry = fields.Str(validate=validate.Length(min=1, max=50))
+    description = fields.Str(validate=validate.Length(min=10, max=2000))
+    logo = fields.Str()
+    website = URLField()
+    phone = PhoneField()
+    address = fields.Str(validate=validate.Length(max=200))
+    city = fields.Str(validate=validate.Length(max=50))
+    country = fields.Str(validate=validate.Length(max=50))

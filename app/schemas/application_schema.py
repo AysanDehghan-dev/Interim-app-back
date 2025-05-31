@@ -1,76 +1,43 @@
-from bson import ObjectId
-from marshmallow import Schema, fields, post_load, pre_dump, validate
+from marshmallow import fields, validate
 
-from app.models.application import ApplicationStatus
+from app.schemas.base import BaseSchema, TimestampMixin, EnumField, ObjectIdField
+from app.models.enums import ApplicationStatus
 
 
-class ApplicationSchema(Schema):
-    id = fields.Str()
-    jobId = fields.Str(attribute="job_id", required=True)
-    userId = fields.Str(attribute="user_id", required=True)
-    status = fields.Str(
-        validate=validate.OneOf(
-            [
-                ApplicationStatus.PENDING,
-                ApplicationStatus.REVIEWING,
-                ApplicationStatus.INTERVIEW,
-                ApplicationStatus.REJECTED,
-                ApplicationStatus.ACCEPTED,
-            ]
-        ),
-        default=ApplicationStatus.PENDING,
+class ApplicationSchema(BaseSchema, TimestampMixin):
+    """Schema for job application data"""
+    id = fields.Str(dump_only=True)
+    job_id = ObjectIdField(data_key="jobId", required=True)
+    user_id = ObjectIdField(data_key="userId", required=True)
+    status = EnumField(ApplicationStatus, missing=ApplicationStatus.PENDING)
+    cover_letter = fields.Str(
+        data_key="coverLetter", 
+        validate=validate.Length(max=2000)
     )
-    coverLetter = fields.Str(attribute="cover_letter")
     resume = fields.Str()
-    createdAt = fields.DateTime(attribute="created_at", dump_only=True)
-    updatedAt = fields.DateTime(attribute="updated_at", dump_only=True)
-
-    # Fields for application listing (populated from related documents)
+    
+    # Populated fields for application listings
     job = fields.Dict(dump_only=True)
     user = fields.Dict(dump_only=True)
 
-    # Convert keys from snake_case to camelCase
-    class Meta:
-        ordered = True
 
-    @pre_dump
-    def prepare_data(self, data, **kwargs):
-        """Convert ObjectId to string and prepare data for serialization"""
-        if data and "_id" in data:
-            data["id"] = str(data["_id"])
-
-        # Convert job_id to string
-        if data and "job_id" in data and isinstance(data["job_id"], ObjectId):
-            data["job_id"] = str(data["job_id"])
-
-        # Convert user_id to string
-        if data and "user_id" in data and isinstance(data["user_id"], ObjectId):
-            data["user_id"] = str(data["user_id"])
-
-        return data
-
-    @post_load
-    def transform_keys(self, data, **kwargs):
-        """Transform keys from camelCase to snake_case for MongoDB"""
-        if "job_id" not in data and "jobId" in data:
-            data["job_id"] = data.pop("jobId")
-        if "user_id" not in data and "userId" in data:
-            data["user_id"] = data.pop("userId")
-        if "cover_letter" not in data and "coverLetter" in data:
-            data["cover_letter"] = data.pop("coverLetter")
-        return data
-
-
-class ApplicationStatusUpdateSchema(Schema):
-    status = fields.Str(
-        required=True,
-        validate=validate.OneOf(
-            [
-                ApplicationStatus.PENDING,
-                ApplicationStatus.REVIEWING,
-                ApplicationStatus.INTERVIEW,
-                ApplicationStatus.REJECTED,
-                ApplicationStatus.ACCEPTED,
-            ]
-        ),
+class ApplicationCreateSchema(BaseSchema):
+    """Schema for creating applications"""
+    job_id = ObjectIdField(data_key="jobId", required=True)
+    cover_letter = fields.Str(
+        data_key="coverLetter", 
+        validate=validate.Length(max=2000)
     )
+    resume = fields.Str()
+
+
+class ApplicationStatusUpdateSchema(BaseSchema):
+    """Schema for updating application status"""
+    status = EnumField(ApplicationStatus, required=True)
+
+
+class ApplicationSearchSchema(PaginationSchema):
+    """Schema for searching applications"""
+    status = EnumField(ApplicationStatus)
+    job_id = ObjectIdField(data_key="jobId")
+    user_id = ObjectIdField(data_key="userId")
