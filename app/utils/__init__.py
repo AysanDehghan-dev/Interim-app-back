@@ -1,23 +1,3 @@
-<<<<<<< HEAD
-from app.utils.db import (
-    delete_one,
-    find_by_id,
-    find_many,
-    find_one,
-    get_db,
-    insert_one,
-    update_one,
-||||||| parent of 2c0145b (feat: Add database management scripts and improve configuration)
-from app.utils.db import (
-    count_documents,
-    delete_one,
-    find_by_id,
-    find_many,
-    find_one,
-    get_db,
-    insert_one,
-    update_one,
-=======
 from .exceptions import DatabaseError, InvalidObjectIdError, DocumentNotFoundError
 from .db import (
     insert_one, insert_many, find_one, find_by_id, find_many,
@@ -32,7 +12,6 @@ from .helpers import (
     paginate_results, validate_email_format, clean_phone_number,
     format_datetime, safe_int, safe_float, truncate_string,
     generate_slug, deep_merge_dicts
->>>>>>> 2c0145b (feat: Add database management scripts and improve configuration)
 )
 
 __all__ = [
