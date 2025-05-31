@@ -1,153 +1,106 @@
-from bson import ObjectId
-from flask import Blueprint, jsonify, request
-from flask_jwt_extended import get_jwt, get_jwt_identity, jwt_required
-from marshmallow import ValidationError
-
+from flask import Blueprint, request
 from app.models.company import Company
 from app.models.job import Job
-from app.schemas.company_schema import CompanySchema
-from app.schemas.job_schema import JobSchema
+from app.schemas.company import CompanySchema, CompanyUpdateSchema
+from app.schemas.job import JobSchema
+from app.utils.decorators import handle_errors, require_user_type, validate_pagination, validate_json
+from app.utils.response_helpers import success_response, paginated_response, sanitize_response_data
+from app.utils.route_helpers import populate_job_data
+from app.utils.db import ensure_document_exists
 
 companies_bp = Blueprint("companies", __name__)
 
 
 @companies_bp.route("", methods=["GET"])
-def get_companies():
+@handle_errors
+@validate_pagination
+def get_companies(pagination):
     """Get list of companies"""
-    try:
-        # Get pagination parameters
-        page = int(request.args.get("page", 1))
-        limit = int(request.args.get("limit", 10))
-        skip = (page - 1) * limit
-
-        # Get companies
-        companies = Company.find_all(limit=limit, skip=skip)
-
-        return jsonify(CompanySchema(many=True).dump(companies)), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # Get companies
+    companies = Company.find_all(limit=pagination['limit'], skip=pagination['skip'])
+    total = Company.count_all()
+    
+    # Sanitize response data
+    sanitized_companies = sanitize_response_data(companies)
+    
+    return paginated_response(
+        CompanySchema(many=True).dump(sanitized_companies),
+        total,
+        pagination['page'],
+        pagination['limit']
+    )
 
 
 @companies_bp.route("/<company_id>", methods=["GET"])
+@handle_errors
 def get_company(company_id):
     """Get company details by ID"""
-    try:
-        company = Company.find_by_id(company_id)
-
-        if not company:
-            return jsonify({"error": "Company not found"}), 404
-
-        return jsonify(CompanySchema().dump(company)), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    company = ensure_document_exists("companies", company_id)
+    
+    return success_response(CompanySchema().dump(sanitize_response_data(company)))
 
 
 @companies_bp.route("/profile", methods=["GET"])
-@jwt_required()
-def get_profile():
+@handle_errors
+@require_user_type("company")
+def get_profile(current_user_id, current_user_type):
     """Get the authenticated company's profile"""
-    try:
-        # Check if the authenticated user is a company
-        claims = get_jwt()
-        user_type = claims.get("user_type", "")
-
-        if user_type != "company":
-            return jsonify({"error": "Access denied"}), 403
-
-        # Get the authenticated company ID
-        company_id = get_jwt_identity()
-
-        # Get the company
-        company = Company.find_by_id(company_id)
-
-        if not company:
-            return jsonify({"error": "Company not found"}), 404
-
-        return jsonify(CompanySchema().dump(company)), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    company = ensure_document_exists("companies", current_user_id)
+    
+    return success_response(CompanySchema().dump(sanitize_response_data(company)))
 
 
 @companies_bp.route("/profile", methods=["PUT"])
-@jwt_required()
-def update_profile():
+@handle_errors
+@require_user_type("company")
+@validate_json(CompanyUpdateSchema)
+def update_profile(current_user_id, current_user_type, validated_data):
     """Update the authenticated company's profile"""
-    try:
-        # Check if the authenticated user is a company
-        claims = get_jwt()
-        user_type = claims.get("user_type", "")
-
-        if user_type != "company":
-            return jsonify({"error": "Access denied"}), 403
-
-        # Get the authenticated company ID
-        company_id = get_jwt_identity()
-
-        # Validate and deserialize input
-        data = CompanySchema(partial=True).load(request.json)
-
-        # Don't allow updating email or password through this endpoint
-        if "email" in data:
-            del data["email"]
-        if "password" in data:
-            del data["password"]
-
-        # Update company
-        Company.update(company_id, data)
-
-        # Get the updated company
-        updated_company = Company.find_by_id(company_id)
-
-        return jsonify(CompanySchema().dump(updated_company)), 200
-
-    except ValidationError as err:
-        return jsonify({"error": "Validation error", "messages": err.messages}), 400
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # Update company
+    Company.update(current_user_id, validated_data)
+    
+    # Get the updated company
+    updated_company = ensure_document_exists("companies", current_user_id)
+    
+    return success_response(
+        CompanySchema().dump(sanitize_response_data(updated_company)),
+        message="Profile updated successfully"
+    )
 
 
 @companies_bp.route("/jobs", methods=["GET"])
-@jwt_required()
-def get_company_jobs():
+@handle_errors
+@require_user_type("company")
+@validate_pagination
+def get_company_jobs(current_user_id, current_user_type, pagination):
     """Get jobs posted by the authenticated company"""
-    try:
-        # Check if the authenticated user is a company
-        claims = get_jwt()
-        user_type = claims.get("user_type", "")
-
-        if user_type != "company":
-            return jsonify({"error": "Access denied"}), 403
-
-        # Get the authenticated company ID
-        company_id = get_jwt_identity()
-
-        # Get jobs for this company
-        jobs = Job.find_by_company(company_id)
-
-        return jsonify(JobSchema(many=True).dump(jobs)), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # Get jobs for this company
+    jobs = Job.find_by_company(current_user_id, limit=pagination['limit'], skip=pagination['skip'])
+    total = Job.count({"company_id": current_user_id})
+    
+    return paginated_response(
+        JobSchema(many=True).dump(jobs),
+        total,
+        pagination['page'],
+        pagination['limit']
+    )
 
 
 @companies_bp.route("/<company_id>/jobs", methods=["GET"])
-def get_jobs_by_company(company_id):
+@handle_errors
+@validate_pagination
+def get_jobs_by_company(company_id, pagination):
     """Get jobs posted by a specific company"""
-    try:
-        # Verify company exists
-        company = Company.find_by_id(company_id)
-
-        if not company:
-            return jsonify({"error": "Company not found"}), 404
-
-        # Get jobs for this company
-        jobs = Job.find_by_company(company_id)
-
-        return jsonify(JobSchema(many=True).dump(jobs)), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    # Verify company exists
+    ensure_document_exists("companies", company_id)
+    
+    # Get jobs for this company
+    jobs = Job.find_by_company(company_id, limit=pagination['limit'], skip=pagination['skip'])
+    total = Job.count({"company_id": company_id})
+    
+    return paginated_response(
+        JobSchema(many=True).dump(jobs),
+        total,
+        pagination['page'],
+        pagination['limit']
+    )

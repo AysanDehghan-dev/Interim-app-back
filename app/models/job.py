@@ -1,171 +1,146 @@
 from datetime import datetime
 
-from bson.objectid import ObjectId
-
-from app.utils.db import (
-    count_documents,
-    find_by_id,
-    find_many,
-    find_one,
-    insert_one,
-    update_one,
-)
+from app.utils.db import count_documents, find_many, insert_one, update_one
+from app.models.base import BaseModel
+from app.models.exceptions import ValidationError
+from app.models.enums import JobType
 
 
-class JobType:
-    """Job type enumeration"""
-
-    FULL_TIME = "FULL_TIME"
-    PART_TIME = "PART_TIME"
-    CONTRACT = "CONTRACT"
-    TEMPORARY = "TEMPORARY"
-    INTERNSHIP = "INTERNSHIP"
-
-
-class Job:
+class Job(BaseModel):
     """Job model class"""
-
+    
     COLLECTION = "jobs"
-
-    @staticmethod
-    def create(job_data):
-        """
-        Create a new job
-        """
-        # Make sure company_id is stored as ObjectId
-        if "company_id" in job_data and not isinstance(
-            job_data["company_id"], ObjectId
-        ):
-            job_data["company_id"] = ObjectId(job_data["company_id"])
-
-        # Initialize empty array for applications
-        if "applications" not in job_data:
-            job_data["applications"] = []
-
-        # Add timestamps if not provided
-        if "created_at" not in job_data:
-            job_data["created_at"] = datetime.utcnow()
-        if "updated_at" not in job_data:
-            job_data["updated_at"] = datetime.utcnow()
-
-        # Add start_date if not provided
-        if "start_date" not in job_data:
-            job_data["start_date"] = datetime.utcnow()
-
-        job_id = insert_one(Job.COLLECTION, job_data)
-        return job_id
-
-    @staticmethod
-    def find_by_id(job_id):
-        """
-        Find a job by ID
-        """
-        return find_by_id(Job.COLLECTION, job_id)
-
-    @staticmethod
-    def find_by_company(company_id, limit=0, skip=0):
-        """
-        Find jobs by company ID
-        """
-        query = {"company_id": ObjectId(company_id)}
-        return find_many(Job.COLLECTION, query, limit=limit, skip=skip)
-
-    @staticmethod
-    def search(filters=None, limit=0, skip=0, sort=None):
-        """
-        Search jobs with filters
-        """
+    
+    @classmethod
+    def _build_search_query(cls, filters):
+        """Build MongoDB query from filters (reusable for search and count)"""
         query = {}
-
+        
         if not filters:
-            filters = {}
-
-        # Apply filters
-        if "keyword" in filters and filters["keyword"]:
+            return query
+        
+        # Keyword search
+        if filters.get("keyword"):
             keyword = filters["keyword"]
             query["$or"] = [
                 {"title": {"$regex": keyword, "$options": "i"}},
                 {"description": {"$regex": keyword, "$options": "i"}},
                 {"requirements": {"$regex": keyword, "$options": "i"}},
             ]
-
-        if "location" in filters and filters["location"]:
+        
+        # Location filter
+        if filters.get("location"):
             query["location"] = {"$regex": filters["location"], "$options": "i"}
-
-        if "type" in filters and filters["type"]:
-            query["type"] = filters["type"]
-
-        if "company_id" in filters and filters["company_id"]:
-            query["company_id"] = ObjectId(filters["company_id"])
-
+        
+        # Job type filter
+        if filters.get("type"):
+            if JobType.is_valid(filters["type"]):
+                query["type"] = filters["type"]
+        
+        # Company filter
+        if filters.get("company_id"):
+            query["company_id"] = cls._validate_object_id(filters["company_id"], "company_id")
+        
+        # Salary range filter
+        if filters.get("min_salary"):
+            query.setdefault("salary", {})["$gte"] = int(filters["min_salary"])
+        
+        if filters.get("max_salary"):
+            query.setdefault("salary", {})["$lte"] = int(filters["max_salary"])
+        
+        return query
+    
+    @classmethod
+    def create(cls, job_data):
+        """Create a new job"""
+        # Validate required fields
+        if not job_data.get("title"):
+            raise ValidationError("Job title is required")
+        if not job_data.get("description"):
+            raise ValidationError("Job description is required")
+        if not job_data.get("company_id"):
+            raise ValidationError("Company ID is required")
+        
+        # Validate company_id
+        job_data["company_id"] = cls._validate_object_id(job_data["company_id"], "company_id")
+        
+        # Validate job type if provided
+        if job_data.get("type") and not JobType.is_valid(job_data["type"]):
+            raise ValidationError(f"Invalid job type. Must be one of: {', '.join(JobType.get_all())}")
+        
+        # Set defaults
+        job_data.setdefault("applications", [])
+        job_data.setdefault("type", JobType.FULL_TIME)
+        
+        # Set start_date if not provided
+        if "start_date" not in job_data:
+            job_data["start_date"] = datetime.utcnow()
+        
+        # Add timestamps
+        cls._add_timestamps(job_data)
+        
+        return insert_one(cls.COLLECTION, job_data)
+    
+    @classmethod
+    def find_by_company(cls, company_id, limit=0, skip=0):
+        """Find jobs by company"""
+        company_id = cls._validate_object_id(company_id, "company_id")
+        query = {"company_id": company_id}
+        sort = [("created_at", -1)]
+        
+        return find_many(cls.COLLECTION, query, sort=sort, limit=limit, skip=skip)
+    
+    @classmethod
+    def search(cls, filters=None, limit=0, skip=0, sort=None):
+        """Search jobs with filters"""
+        query = cls._build_search_query(filters)
+        
         # Default sort by creation date (newest first)
         if not sort:
             sort = [("created_at", -1)]
-
-        return find_many(Job.COLLECTION, query, sort=sort, limit=limit, skip=skip)
-
-    @staticmethod
-    def count(filters=None):
-        """
-        Count jobs matching filters
-        """
-        query = {}
-
-        if not filters:
-            filters = {}
-
-        # Apply filters (same as in search method)
-        if "keyword" in filters and filters["keyword"]:
-            keyword = filters["keyword"]
-            query["$or"] = [
-                {"title": {"$regex": keyword, "$options": "i"}},
-                {"description": {"$regex": keyword, "$options": "i"}},
-                {"requirements": {"$regex": keyword, "$options": "i"}},
-            ]
-
-        if "location" in filters and filters["location"]:
-            query["location"] = {"$regex": filters["location"], "$options": "i"}
-
-        if "type" in filters and filters["type"]:
-            query["type"] = filters["type"]
-
-        if "company_id" in filters and filters["company_id"]:
-            query["company_id"] = ObjectId(filters["company_id"])
-
-        return count_documents(Job.COLLECTION, query)
-
-    @staticmethod
-    def update(job_id, job_data):
-        """
-        Update a job
-        """
-        # Make sure company_id is stored as ObjectId if provided
-        if "company_id" in job_data and not isinstance(
-            job_data["company_id"], ObjectId
-        ):
-            job_data["company_id"] = ObjectId(job_data["company_id"])
-
-        # Update the updated_at timestamp
-        job_data["updated_at"] = datetime.utcnow()
-
-        return update_one(Job.COLLECTION, job_id, job_data)
-
-    @staticmethod
-    def add_application(job_id, application_id):
-        """
-        Add application reference to job
-        """
-        job = Job.find_by_id(job_id)
-
+        
+        return find_many(cls.COLLECTION, query, sort=sort, limit=limit, skip=skip)
+    
+    @classmethod
+    def count(cls, filters=None):
+        """Count jobs matching filters"""
+        query = cls._build_search_query(filters)
+        return count_documents(cls.COLLECTION, query)
+    
+    @classmethod
+    def update(cls, job_id, job_data):
+        """Update a job"""
+        # Validate company_id if provided
+        if "company_id" in job_data:
+            job_data["company_id"] = cls._validate_object_id(job_data["company_id"], "company_id")
+        
+        # Validate job type if provided
+        if job_data.get("type") and not JobType.is_valid(job_data["type"]):
+            raise ValidationError(f"Invalid job type. Must be one of: {', '.join(JobType.get_all())}")
+        
+        # Add update timestamp
+        cls._add_timestamps(job_data, is_update=True)
+        
+        return update_one(cls.COLLECTION, job_id, job_data)
+    
+    @classmethod
+    def add_application(cls, job_id, application_id):
+        """Add application reference to job"""
+        job = cls.find_by_id(job_id)
         if not job:
-            return False
-
+            raise ValidationError("Job not found")
+        
         applications = job.get("applications", [])
-
-        # Add application_id as string if it's not already in the list
-        if str(application_id) not in [str(a) for a in applications]:
+        
+        # Add application_id if not already present
+        application_id_str = str(application_id)
+        if application_id_str not in [str(a) for a in applications]:
             applications.append(application_id)
-            update_one(Job.COLLECTION, job_id, {"applications": applications})
+            
+            update_data = {"applications": applications}
+            cls._add_timestamps(update_data, is_update=True)
+            
+            update_one(cls.COLLECTION, job_id, update_data)
             return True
-
+        
         return False

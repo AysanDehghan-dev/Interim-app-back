@@ -1,325 +1,435 @@
-import datetime
+# seed.py
+"""
+Database seeding script using the improved models and validation
+"""
 import os
 import sys
+from datetime import datetime, timedelta
 
-from bson import ObjectId
+# Add project root to Python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from flask import Flask
 from dotenv import load_dotenv
-from passlib.hash import pbkdf2_sha256
-from pymongo import MongoClient
 
 # Load environment variables
 load_dotenv()
 
-# Connect to MongoDB
-# Check if we're in Docker or local environment
-import socket
+# Import your improved models and utilities
+from app.models.user import User
+from app.models.company import Company
+from app.models.job import Job
+from app.models.application import Application
+from app.models.enums import JobType, ApplicationStatus
+from app.models.exceptions import ValidationError
+from app.utils.db import get_db
+from config import get_config
 
 
-def is_mongo_available(host="mongo", port=27017, timeout=1):
-    """Check if MongoDB is available at the given host and port"""
+def create_app():
+    """Create minimal Flask app for database operations"""
+    app = Flask(__name__)
+    
+    # Load configuration
+    app_config = get_config()
+    app.config.from_object(app_config)
+    
+    # Initialize database connection
+    from pymongo import MongoClient
+    from urllib.parse import urlparse
+    
     try:
-        socket.create_connection((host, port), timeout=timeout)
-        return True
-    except (socket.timeout, socket.error):
-        return False
+        mongodb_client = MongoClient(
+            app.config["MONGODB_URI"],
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=10000,
+        )
+        
+        # Test connection
+        mongodb_client.admin.command("ping")
+        
+        # Get database name
+        parsed_uri = urlparse(app.config["MONGODB_URI"])
+        db_name = parsed_uri.path.lstrip('/') or 'interimapp'
+        
+        db = mongodb_client[db_name]
+        
+        # Make available to app
+        app.mongodb_client = mongodb_client
+        app.db = db
+        
+        print(f"✅ Connected to MongoDB: {db_name}")
+        return app
+        
+    except Exception as e:
+        print(f"❌ Failed to connect to MongoDB: {str(e)}")
+        sys.exit(1)
 
 
-# Try to connect to 'mongo' hostname (Docker), otherwise fallback to localhost
-if is_mongo_available(host="mongo"):
-    MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb://mongo:27017/interimapp")
-else:
-    MONGODB_URI = os.environ.get("MONGODB_URI", "mongodb://localhost:27017/interimapp")
-
-print(f"Connecting to MongoDB at {MONGODB_URI}")
-client = MongoClient(MONGODB_URI)
-db_name = MONGODB_URI.split("/")[-1]
-db = client[db_name]
-
-# Clear existing data
-db.users.delete_many({})
-db.companies.delete_many({})
-db.jobs.delete_many({})
-db.applications.delete_many({})
+def clear_database(app):
+    """Clear existing data from all collections"""
+    with app.app_context():
+        db = app.db
+        
+        collections = ['users', 'companies', 'jobs', 'applications']
+        
+        for collection in collections:
+            count = db[collection].count_documents({})
+            if count > 0:
+                db[collection].delete_many({})
+                print(f"🗑️  Cleared {count} documents from {collection}")
+            else:
+                print(f"📭 Collection {collection} was already empty")
 
 
-# Job types
-class JobType:
-    FULL_TIME = "FULL_TIME"
-    PART_TIME = "PART_TIME"
-    CONTRACT = "CONTRACT"
-    TEMPORARY = "TEMPORARY"
-    INTERNSHIP = "INTERNSHIP"
+def create_sample_companies():
+    """Create sample companies using the improved Company model"""
+    companies_data = [
+        {
+            "name": "TechCorp",
+            "industry": "Technology",
+            "description": "Leading software development company specializing in web and mobile applications. We're passionate about creating innovative solutions that make a difference.",
+            "logo": "https://placehold.co/200x200/3B82F6/FFFFFF?text=TechCorp",
+            "website": "https://techcorp.example.com",
+            "email": "contact@techcorp.example.com",
+            "password": "SecurePass123",
+            "phone": "+33123456789",
+            "address": "50 Rue de l'Innovation",
+            "city": "Lyon",
+            "country": "France",
+        },
+        {
+            "name": "DataInsight",
+            "industry": "Data Analytics",
+            "description": "Data science and AI company helping businesses make data-driven decisions. We specialize in machine learning and predictive analytics.",
+            "logo": "https://placehold.co/200x200/10B981/FFFFFF?text=DataInsight",
+            "website": "https://datainsight.example.com", 
+            "email": "contact@datainsight.example.com",
+            "password": "SecurePass123",
+            "phone": "+33987654321",
+            "address": "15 Avenue de l'Intelligence",
+            "city": "Paris",
+            "country": "France",
+        },
+        {
+            "name": "CreativeStudio",
+            "industry": "Design",
+            "description": "Award-winning design agency creating beautiful and functional user experiences. We work with startups and enterprises worldwide.",
+            "logo": "https://placehold.co/200x200/F59E0B/FFFFFF?text=Creative",
+            "website": "https://creativestudio.example.com",
+            "email": "hello@creativestudio.example.com", 
+            "password": "SecurePass123",
+            "phone": "+33456789123",
+            "address": "25 Boulevard des Arts",
+            "city": "Marseille",
+            "country": "France",
+        }
+    ]
+    
+    created_companies = []
+    
+    for company_data in companies_data:
+        try:
+            company_id = Company.create(company_data)
+            company = Company.find_by_id(company_id)
+            created_companies.append(company)
+            print(f"✅ Created company: {company_data['name']}")
+            
+        except ValidationError as e:
+            print(f"❌ Failed to create company {company_data['name']}: {str(e)}")
+        except Exception as e:
+            print(f"❌ Unexpected error creating company {company_data['name']}: {str(e)}")
+    
+    return created_companies
 
 
-# Application statuses
-class ApplicationStatus:
-    PENDING = "PENDING"
-    REVIEWING = "REVIEWING"
-    INTERVIEW = "INTERVIEW"
-    REJECTED = "REJECTED"
-    ACCEPTED = "ACCEPTED"
+def create_sample_users():
+    """Create sample users using the improved User model"""
+    users_data = [
+        {
+            "first_name": "Jean",
+            "last_name": "Dupont",
+            "email": "jean.dupont@example.com",
+            "password": "SecurePass123",
+            "phone": "+33612345678",
+            "address": "25 Rue de Paris",
+            "city": "Lyon",
+            "country": "France",
+            "profile_picture": "https://randomuser.me/api/portraits/men/1.jpg",
+            "skills": ["JavaScript", "React", "TypeScript", "Node.js", "MongoDB"],
+        },
+        {
+            "first_name": "Marie",
+            "last_name": "Laurent", 
+            "email": "marie.laurent@example.com",
+            "password": "SecurePass123",
+            "phone": "+33698765432",
+            "address": "10 Avenue Victor Hugo",
+            "city": "Paris",
+            "country": "France",
+            "profile_picture": "https://randomuser.me/api/portraits/women/1.jpg",
+            "skills": ["Python", "Data Analysis", "SQL", "Machine Learning", "TensorFlow"],
+        },
+        {
+            "first_name": "Pierre",
+            "last_name": "Martin",
+            "email": "pierre.martin@example.com", 
+            "password": "SecurePass123",
+            "phone": "+33655443322",
+            "address": "5 Place de la République",
+            "city": "Marseille", 
+            "country": "France",
+            "profile_picture": "https://randomuser.me/api/portraits/men/2.jpg",
+            "skills": ["UI/UX Design", "Figma", "Adobe Creative Suite", "Prototyping"],
+        }
+    ]
+    
+    created_users = []
+    
+    for user_data in users_data:
+        try:
+            user_id = User.create(user_data)
+            user = User.find_by_id(user_id)
+            created_users.append(user)
+            print(f"✅ Created user: {user_data['first_name']} {user_data['last_name']}")
+            
+        except ValidationError as e:
+            print(f"❌ Failed to create user {user_data['email']}: {str(e)}")
+        except Exception as e:
+            print(f"❌ Unexpected error creating user {user_data['email']}: {str(e)}")
+    
+    return created_users
 
 
-# Create companies
-companies = [
-    {
-        "_id": ObjectId(),
-        "name": "TechCorp",
-        "industry": "Technologie",
-        "description": "Entreprise spécialisée dans le développement de solutions web innovantes. TechCorp est reconnue pour sa culture d'entreprise dynamique et ses avantages compétitifs.",
-        "logo": "https://placehold.co/200x200?text=TechCorp",
-        "website": "https://techcorp.example.com",
-        "email": "contact@techcorp.example.com",
-        "password": pbkdf2_sha256.hash("password"),
-        "phone": "+33 1 23 45 67 89",
-        "address": "50 Rue de l'Innovation",
-        "city": "Lyon",
-        "country": "France",
-        "jobs": [],
-        "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow(),
-    },
-    {
-        "_id": ObjectId(),
-        "name": "DataInsight",
-        "industry": "Analyse de données",
-        "description": "Leader dans l'analyse de données et l'intelligence artificielle. DataInsight développe des algorithmes prédictifs pour aider les entreprises à prendre de meilleures décisions basées sur les données.",
-        "logo": "https://placehold.co/200x200?text=DataInsight",
-        "website": "https://datainsight.example.com",
-        "email": "contact@datainsight.example.com",
-        "password": pbkdf2_sha256.hash("password"),
-        "phone": "+33 1 98 76 54 32",
-        "address": "15 Avenue de l'Intelligence",
-        "city": "Paris",
-        "country": "France",
-        "jobs": [],
-        "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow(),
-    },
-]
-
-# Insert companies
-company_ids = []
-for company in companies:
-    result = db.companies.insert_one(company)
-    company_ids.append(company["_id"])
-
-# Create users
-users = [
-    {
-        "_id": ObjectId(),
-        "first_name": "Jean",
-        "last_name": "Dupont",
-        "email": "jean.dupont@example.com",
-        "password": pbkdf2_sha256.hash("password"),
-        "phone": "+33 6 12 34 56 78",
-        "address": "25 Rue de Paris",
-        "city": "Lyon",
-        "country": "France",
-        "profile_picture": "https://randomuser.me/api/portraits/men/1.jpg",
-        "skills": ["JavaScript", "React", "TypeScript", "Node.js"],
-        "experience": [
-            {
-                "id": str(ObjectId()),
-                "title": "Développeur Frontend",
-                "company": "TechCorp",
-                "location": "Lyon",
-                "start_date": datetime.datetime(2020, 1, 1),
-                "end_date": datetime.datetime(2022, 12, 31),
+def add_user_experience_and_education(users):
+    """Add experience and education to users"""
+    if len(users) >= 2:
+        # Add experience to Jean
+        try:
+            User.add_experience(users[0]["_id"], {
+                "title": "Frontend Developer",
+                "company": "TechStart",
+                "location": "Lyon, France",
+                "start_date": datetime(2020, 1, 1),
+                "end_date": datetime(2022, 12, 31),
                 "current": False,
-                "description": "Développement d'applications web avec React et TypeScript.",
-            }
-        ],
-        "education": [
-            {
-                "id": str(ObjectId()),
-                "institution": "Université de Lyon",
+                "description": "Developed modern web applications using React and TypeScript."
+            })
+            
+            User.add_education(users[0]["_id"], {
+                "school": "Université de Lyon",
                 "degree": "Master",
-                "field": "Informatique",
-                "start_date": datetime.datetime(2015, 9, 1),
-                "end_date": datetime.datetime(2020, 6, 30),
+                "field": "Computer Science",
+                "start_date": datetime(2015, 9, 1),
+                "end_date": datetime(2020, 6, 30),
                 "current": False,
-                "description": "Spécialisation en développement web et applications mobiles.",
-            }
-        ],
-        "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow(),
-    },
-    {
-        "_id": ObjectId(),
-        "first_name": "Marie",
-        "last_name": "Laurent",
-        "email": "marie.laurent@example.com",
-        "password": pbkdf2_sha256.hash("password"),
-        "phone": "+33 6 98 76 54 32",
-        "address": "10 Avenue Victor Hugo",
-        "city": "Paris",
-        "country": "France",
-        "profile_picture": "https://randomuser.me/api/portraits/women/1.jpg",
-        "skills": ["Python", "Data Analysis", "SQL", "Machine Learning"],
-        "experience": [
-            {
-                "id": str(ObjectId()),
+                "description": "Specialized in web development and mobile applications."
+            })
+            
+            print("✅ Added experience and education for Jean")
+            
+        except Exception as e:
+            print(f"❌ Failed to add experience for Jean: {str(e)}")
+        
+        # Add experience to Marie
+        try:
+            User.add_experience(users[1]["_id"], {
                 "title": "Data Scientist",
-                "company": "DataInsight",
-                "location": "Paris",
-                "start_date": datetime.datetime(2019, 3, 1),
-                "end_date": datetime.datetime(2023, 2, 28),
+                "company": "DataCorp",
+                "location": "Paris, France", 
+                "start_date": datetime(2019, 3, 1),
+                "end_date": datetime(2023, 2, 28),
                 "current": False,
-                "description": "Analyse de données et création de modèles prédictifs.",
-            }
-        ],
-        "education": [
-            {
-                "id": str(ObjectId()),
-                "institution": "École Polytechnique",
-                "degree": "Ingénieur",
-                "field": "Science des données",
-                "start_date": datetime.datetime(2014, 9, 1),
-                "end_date": datetime.datetime(2019, 6, 30),
+                "description": "Built machine learning models and performed data analysis."
+            })
+            
+            User.add_education(users[1]["_id"], {
+                "school": "École Polytechnique",
+                "degree": "Engineering Degree",
+                "field": "Data Science",
+                "start_date": datetime(2014, 9, 1),
+                "end_date": datetime(2019, 6, 30),
                 "current": False,
-                "description": "Spécialisation en data science et intelligence artificielle.",
-            }
-        ],
-        "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow(),
-    },
-]
+                "description": "Specialized in data science and artificial intelligence."
+            })
+            
+            print("✅ Added experience and education for Marie")
+            
+        except Exception as e:
+            print(f"❌ Failed to add experience for Marie: {str(e)}")
 
-# Insert users
-user_ids = []
-for user in users:
-    result = db.users.insert_one(user)
-    user_ids.append(user["_id"])
 
-# Create jobs
-jobs = [
-    {
-        "_id": ObjectId(),
-        "title": "Développeur Frontend React",
-        "company_id": companies[0]["_id"],
-        "description": "Nous recherchons un développeur Frontend React expérimenté pour rejoindre notre équipe. Vous serez responsable du développement d'applications web interactives pour nos clients. Vous travaillerez en collaboration avec notre équipe de designers UX et nos développeurs backend pour créer des expériences utilisateur exceptionnelles.",
-        "requirements": [
-            "Expérience de 3 ans minimum avec React et TypeScript",
-            "Maîtrise de HTML5, CSS3 et JavaScript ES6+",
-            "Expérience avec les outils de gestion de version comme Git",
-            "Connaissance de Redux ou Context API pour la gestion d'état",
-            "Expérience avec les tests unitaires (Jest, React Testing Library)",
-        ],
-        "location": "Lyon, France",
-        "type": JobType.FULL_TIME,
-        "salary": {"min": 40000, "max": 55000, "currency": "EUR"},
-        "start_date": datetime.datetime.utcnow(),
-        "applications": [],
-        "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow(),
-    },
-    {
-        "_id": ObjectId(),
-        "title": "Data Scientist",
-        "company_id": companies[1]["_id"],
-        "description": "Rejoignez notre équipe d'analyse de données pour travailler sur des projets innovants. Vous serez chargé de concevoir et mettre en œuvre des modèles de machine learning, d'analyser les données pour en extraire des insights pertinents, et de présenter vos résultats à différentes parties prenantes.",
-        "requirements": [
-            "Master ou PhD en statistiques, mathématiques ou informatique",
-            "Expérience pratique en machine learning et en data mining",
-            "Maîtrise de Python et des bibliothèques de data science (Pandas, NumPy, Scikit-learn)",
-            "Connaissance approfondie des bases de données SQL et NoSQL",
-            "Excellentes capacités d'analyse et de communication",
-        ],
-        "location": "Paris, France",
-        "type": JobType.CONTRACT,
-        "salary": {"min": 45000, "max": 60000, "currency": "EUR"},
-        "start_date": datetime.datetime.utcnow(),
-        "applications": [],
-        "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow(),
-    },
-    {
-        "_id": ObjectId(),
-        "title": "Développeur Backend Node.js",
-        "company_id": companies[0]["_id"],
-        "description": "Nous recherchons un développeur Backend Node.js pour renforcer notre équipe technique. Vous serez responsable du développement et de la maintenance de notre infrastructure serveur, de l'optimisation des performances et de l'implémentation de nouvelles fonctionnalités.",
-        "requirements": [
-            "Expérience significative avec Node.js et frameworks comme Express ou NestJS",
-            "Maîtrise des bases de données MongoDB et des requêtes complexes",
-            "Connaissance approfondie de Git et des workflows de développement",
-            "Expérience dans la conception et l'implémentation d'API RESTful",
-            "Capacité à travailler de manière autonome et à résoudre des problèmes complexes",
-        ],
-        "location": "Lyon, France",
-        "type": JobType.FULL_TIME,
-        "salary": {"min": 42000, "max": 58000, "currency": "EUR"},
-        "start_date": datetime.datetime.utcnow(),
-        "applications": [],
-        "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow(),
-    },
-    {
-        "_id": ObjectId(),
-        "title": "UI/UX Designer",
-        "company_id": companies[1]["_id"],
-        "description": "Nous recherchons un designer UI/UX créatif pour concevoir des interfaces utilisateur intuitives et esthétiques. Vous travaillerez en étroite collaboration avec notre équipe de développeurs pour donner vie à vos designs.",
-        "requirements": [
-            "Portfolio démontrant d'excellentes compétences en design d'interface",
-            "Maîtrise des outils de design (Figma, Adobe XD, Sketch)",
-            "Expérience dans la conduite de recherches utilisateurs et de tests d'utilisabilité",
-            "Connaissance des principes d'accessibilité et de responsive design",
-            "Capacité à communiquer et défendre vos choix de design",
-        ],
-        "location": "Paris, France",
-        "type": JobType.PART_TIME,
-        "salary": {"min": 30000, "max": 40000, "currency": "EUR"},
-        "start_date": datetime.datetime.utcnow(),
-        "applications": [],
-        "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow(),
-    },
-]
+def create_sample_jobs(companies):
+    """Create sample jobs using the improved Job model"""
+    if len(companies) < 2:
+        print("❌ Not enough companies to create jobs")
+        return []
+    
+    jobs_data = [
+        {
+            "title": "Senior React Developer", 
+            "company_id": str(companies[0]["_id"]),
+            "description": "We're looking for an experienced React developer to join our team. You'll work on cutting-edge web applications and collaborate with our design team to create amazing user experiences.",
+            "requirements": [
+                "3+ years experience with React and TypeScript",
+                "Strong knowledge of HTML5, CSS3, and JavaScript ES6+",
+                "Experience with state management (Redux, Context API)",
+                "Familiarity with testing frameworks (Jest, React Testing Library)",
+                "Good understanding of Git and agile development practices"
+            ],
+            "location": "Lyon, France",
+            "type": JobType.FULL_TIME,
+            "start_date": datetime.utcnow() + timedelta(days=30),
+        },
+        {
+            "title": "Data Scientist",
+            "company_id": str(companies[1]["_id"]),
+            "description": "Join our data science team to work on exciting AI projects. You'll develop machine learning models, analyze large datasets, and help drive data-driven decisions.",
+            "requirements": [
+                "Master's or PhD in Statistics, Mathematics, or Computer Science",
+                "Strong experience with Python and data science libraries",
+                "Knowledge of machine learning algorithms and techniques", 
+                "Experience with SQL and NoSQL databases",
+                "Excellent analytical and communication skills"
+            ],
+            "location": "Paris, France",
+            "type": JobType.CONTRACT,
+            "start_date": datetime.utcnow() + timedelta(days=15),
+        },
+        {
+            "title": "Backend Developer",
+            "company_id": str(companies[0]["_id"]),
+            "description": "We need a skilled backend developer to build robust and scalable server-side applications. You'll work with modern technologies and help architect our platform.",
+            "requirements": [
+                "Strong experience with Node.js and Express/NestJS",
+                "Deep knowledge of MongoDB and database design",
+                "Experience with RESTful API design and implementation",
+                "Understanding of microservices architecture",
+                "Knowledge of containerization (Docker) and cloud platforms"
+            ],
+            "location": "Lyon, France",
+            "type": JobType.FULL_TIME,
+            "start_date": datetime.utcnow() + timedelta(days=45),
+        },
+        {
+            "title": "UI/UX Designer",
+            "company_id": str(companies[2]["_id"]) if len(companies) > 2 else str(companies[1]["_id"]),
+            "description": "Creative UI/UX designer needed to create beautiful and intuitive user interfaces. You'll work closely with our development team to bring designs to life.",
+            "requirements": [
+                "Strong portfolio showing excellent design skills",
+                "Proficiency with design tools (Figma, Adobe XD, Sketch)",
+                "Experience with user research and usability testing",
+                "Knowledge of accessibility and responsive design principles", 
+                "Ability to create and maintain design systems"
+            ],
+            "location": "Remote",
+            "type": JobType.PART_TIME,
+            "start_date": datetime.utcnow() + timedelta(days=20),
+        }
+    ]
+    
+    created_jobs = []
+    
+    for job_data in jobs_data:
+        try:
+            job_id = Job.create(job_data)
+            job = Job.find_by_id(job_id)
+            created_jobs.append(job)
+            
+            # Add job reference to company
+            Company.add_job(job_data["company_id"], job_id)
+            
+            print(f"✅ Created job: {job_data['title']}")
+            
+        except ValidationError as e:
+            print(f"❌ Failed to create job {job_data['title']}: {str(e)}")
+        except Exception as e:
+            print(f"❌ Unexpected error creating job {job_data['title']}: {str(e)}")
+    
+    return created_jobs
 
-# Insert jobs
-job_ids = []
-for job in jobs:
-    result = db.jobs.insert_one(job)
-    job_id = job["_id"]
-    job_ids.append(job_id)
 
-    # Update company with job reference
-    company_id = job["company_id"]
-    db.companies.update_one({"_id": company_id}, {"$push": {"jobs": job_id}})
+def create_sample_applications(users, jobs):
+    """Create sample applications using the improved Application model"""
+    if len(users) < 2 or len(jobs) < 2:
+        print("❌ Not enough users or jobs to create applications")
+        return []
+    
+    applications_data = [
+        {
+            "job_id": str(jobs[0]["_id"]),
+            "user_id": str(users[1]["_id"]),  # Marie applying to React job
+            "cover_letter": "I'm very interested in this position as I have experience with modern web technologies and I'm looking to transition into frontend development.",
+            "status": ApplicationStatus.PENDING,
+        },
+        {
+            "job_id": str(jobs[1]["_id"]),
+            "user_id": str(users[0]["_id"]),  # Jean applying to Data Science job
+            "cover_letter": "With my development background and growing interest in data science, I believe I could bring a unique perspective to your team.",
+            "status": ApplicationStatus.REVIEWING,
+        }
+    ]
+    
+    created_applications = []
+    
+    for app_data in applications_data:
+        try:
+            application_id = Application.create(app_data)
+            application = Application.find_by_id(application_id)
+            created_applications.append(application)
+            
+            # Add application reference to job
+            Job.add_application(app_data["job_id"], application_id)
+            
+            print(f"✅ Created application: {application_id}")
+            
+        except ValidationError as e:
+            print(f"❌ Failed to create application: {str(e)}")
+        except Exception as e:
+            print(f"❌ Unexpected error creating application: {str(e)}")
+    
+    return created_applications
 
-# Create applications
-applications = [
-    {
-        "_id": ObjectId(),
-        "job_id": jobs[0]["_id"],
-        "user_id": users[1]["_id"],
-        "status": ApplicationStatus.PENDING,
-        "cover_letter": "Je suis très intéressé par ce poste car j'ai une solide expérience en développement frontend et je souhaite rejoindre une entreprise innovante comme la vôtre.",
-        "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow(),
-    },
-    {
-        "_id": ObjectId(),
-        "job_id": jobs[1]["_id"],
-        "user_id": users[0]["_id"],
-        "status": ApplicationStatus.REVIEWING,
-        "cover_letter": "Avec mon expérience en développement et mon intérêt pour la data science, je pense être un bon candidat pour ce poste. Je suis impatient de pouvoir contribuer à vos projets innovants.",
-        "created_at": datetime.datetime.utcnow(),
-        "updated_at": datetime.datetime.utcnow(),
-    },
-]
 
-# Insert applications
-for application in applications:
-    result = db.applications.insert_one(application)
-    application_id = application["_id"]
+def main():
+    """Main seeding function"""
+    print("🌱 Starting database seeding...")
+    
+    # Create Flask app and connect to database
+    app = create_app()
+    
+    with app.app_context():
+        # Clear existing data
+        clear_database(app)
+        
+        # Create sample data
+        print("\n📊 Creating sample companies...")
+        companies = create_sample_companies()
+        
+        print(f"\n👥 Creating sample users...")
+        users = create_sample_users()
+        
+        print(f"\n📚 Adding experience and education...")
+        add_user_experience_and_education(users)
+        
+        print(f"\n💼 Creating sample jobs...")
+        jobs = create_sample_jobs(companies)
+        
+        print(f"\n📝 Creating sample applications...")
+        applications = create_sample_applications(users, jobs)
+        
+        # Print summary
+        print(f"\n🎉 Database seeding completed successfully!")
+        print(f"📈 Summary:")
+        print(f"   • {len(companies)} companies created")
+        print(f"   • {len(users)} users created")
+        print(f"   • {len(jobs)} jobs created")
+        print(f"   • {len(applications)} applications created")
+        
+        print(f"\n🔐 Test credentials:")
+        print(f"   Companies: contact@techcorp.example.com / SecurePass123")
+        print(f"   Users: jean.dupont@example.com / SecurePass123")
 
-    # Update job with application reference
-    job_id = application["job_id"]
-    db.jobs.update_one({"_id": job_id}, {"$push": {"applications": application_id}})
 
-print("Database seeded successfully!")
-print(f"Created {len(companies)} companies")
-print(f"Created {len(users)} users")
-print(f"Created {len(jobs)} jobs")
-print(f"Created {len(applications)} applications")
+if __name__ == "__main__":
+    main()

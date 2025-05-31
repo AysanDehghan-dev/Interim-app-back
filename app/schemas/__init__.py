@@ -1,25 +1,47 @@
-from app.schemas.application_schema import (
-    ApplicationSchema,
+from .base import BaseSchema, PaginationSchema
+from .user_schema import (
+    UserSchema, 
+    UserLoginSchema, 
+    UserRegisterSchema, 
+    UserUpdateSchema,
+    ExperienceSchema,
+    EducationSchema
+)
+from .company_schema import (
+    CompanySchema, 
+    CompanyLoginSchema, 
+    CompanyRegisterSchema, 
+    CompanyUpdateSchema
+)
+from .job_schema import (
+    JobSchema, 
+    JobCreateSchema, 
+    JobUpdateSchema, 
+    JobSearchSchema,
+    SalarySchema
+)
+from .application_schema import (
+    ApplicationSchema, 
+    ApplicationCreateSchema, 
     ApplicationStatusUpdateSchema,
+    ApplicationSearchSchema
 )
-from app.schemas.company_schema import (
-    CompanyLoginSchema,
-    CompanyRegisterSchema,
-    CompanySchema,
-)
-from app.schemas.job_schema import JobSchema, JobSearchSchema, SalarySchema
-from app.schemas.user_schema import UserLoginSchema, UserRegisterSchema, UserSchema
 
 __all__ = [
-    "UserSchema",
-    "UserLoginSchema",
-    "UserRegisterSchema",
-    "CompanySchema",
-    "CompanyLoginSchema",
-    "CompanyRegisterSchema",
-    "JobSchema",
-    "JobSearchSchema",
-    "SalarySchema",
-    "ApplicationSchema",
-    "ApplicationStatusUpdateSchema",
+    # Base
+    'BaseSchema', 'PaginationSchema',
+    
+    # User schemas
+    'UserSchema', 'UserLoginSchema', 'UserRegisterSchema', 'UserUpdateSchema',
+    'ExperienceSchema', 'EducationSchema',
+    
+    # Company schemas
+    'CompanySchema', 'CompanyLoginSchema', 'CompanyRegisterSchema', 'CompanyUpdateSchema',
+    
+    # Job schemas
+    'JobSchema', 'JobCreateSchema', 'JobUpdateSchema', 'JobSearchSchema', 'SalarySchema',
+    
+    # Application schemas
+    'ApplicationSchema', 'ApplicationCreateSchema', 'ApplicationStatusUpdateSchema', 
+    'ApplicationSearchSchema'
 ]

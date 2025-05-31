@@ -1,107 +1,101 @@
-from bson import ObjectId
-from marshmallow import (
-    Schema,
-    ValidationError,
-    fields,
-    post_load,
-    pre_dump,
-    validate,
-    validates_schema,
-)
+from marshmallow import fields, validate, validates_schema
+from marshmallow import ValidationError as MarshmallowValidationError
+
+from app.schemas.base import BaseSchema, TimestampMixin, PhoneField, ObjectIdField
 
 
-class ExperienceSchema(Schema):
-    id = fields.Str()
-    title = fields.Str(required=True)
-    company = fields.Str(required=True)
-    location = fields.Str()
-    startDate = fields.DateTime(attribute="start_date", required=True)
-    endDate = fields.DateTime(attribute="end_date")
-    current = fields.Bool(default=False)
-    description = fields.Str()
-
-    # Convert keys from snake_case to camelCase
-    class Meta:
-        ordered = True
-
-
-class EducationSchema(Schema):
-    id = fields.Str()
-    institution = fields.Str(required=True)
-    degree = fields.Str(required=True)
-    field = fields.Str(required=True)
-    startDate = fields.DateTime(attribute="start_date", required=True)
-    endDate = fields.DateTime(attribute="end_date")
-    current = fields.Bool(default=False)
-    description = fields.Str()
-
-    # Convert keys from snake_case to camelCase
-    class Meta:
-        ordered = True
+class ExperienceSchema(BaseSchema):
+    """Schema for user experience"""
+    id = fields.Str(dump_only=True)
+    title = fields.Str(required=True, validate=validate.Length(min=1, max=100))
+    company = fields.Str(required=True, validate=validate.Length(min=1, max=100))
+    location = fields.Str(validate=validate.Length(max=100))
+    start_date = fields.DateTime(data_key="startDate", required=True)
+    end_date = fields.DateTime(data_key="endDate")
+    current = fields.Bool(missing=False)
+    description = fields.Str(validate=validate.Length(max=1000))
+    
+    @validates_schema
+    def validate_dates(self, data, **kwargs):
+        """Validate that end_date is after start_date"""
+        if not data.get('current') and data.get('end_date') and data.get('start_date'):
+            if data['end_date'] <= data['start_date']:
+                raise MarshmallowValidationError("End date must be after start date")
 
 
-class UserSchema(Schema):
-    id = fields.Str()
-    firstName = fields.Str(
-        attribute="first_name", required=True, validate=validate.Length(min=1)
+class EducationSchema(BaseSchema):
+    """Schema for user education"""
+    id = fields.Str(dump_only=True)
+    school = fields.Str(data_key="institution", required=True, validate=validate.Length(min=1, max=100))
+    degree = fields.Str(required=True, validate=validate.Length(min=1, max=100))
+    field = fields.Str(data_key="field_of_study", required=True, validate=validate.Length(min=1, max=100))
+    start_date = fields.DateTime(data_key="startDate", required=True)
+    end_date = fields.DateTime(data_key="endDate")
+    current = fields.Bool(missing=False)
+    description = fields.Str(validate=validate.Length(max=500))
+    
+    @validates_schema
+    def validate_dates(self, data, **kwargs):
+        """Validate that end_date is after start_date"""
+        if not data.get('current') and data.get('end_date') and data.get('start_date'):
+            if data['end_date'] <= data['start_date']:
+                raise MarshmallowValidationError("End date must be after start date")
+
+
+class UserSchema(BaseSchema, TimestampMixin):
+    """Schema for user data"""
+    id = fields.Str(dump_only=True)
+    first_name = fields.Str(
+        data_key="firstName", 
+        required=True, 
+        validate=validate.Length(min=1, max=50)
     )
-    lastName = fields.Str(
-        attribute="last_name", required=True, validate=validate.Length(min=1)
+    last_name = fields.Str(
+        data_key="lastName", 
+        required=True, 
+        validate=validate.Length(min=1, max=50)
     )
     email = fields.Email(required=True)
-    password = fields.Str(load_only=True, validate=validate.Length(min=6))
-    phone = fields.Str()
-    address = fields.Str()
-    city = fields.Str()
-    country = fields.Str()
-    profilePicture = fields.Str(attribute="profile_picture")
-    skills = fields.List(fields.Str(), default=[])
-    experience = fields.List(fields.Nested(ExperienceSchema), default=[])
-    education = fields.List(fields.Nested(EducationSchema), default=[])
+    password = fields.Str(
+        load_only=True, 
+        validate=validate.Length(min=6, max=128)
+    )
+    phone = PhoneField()
+    address = fields.Str(validate=validate.Length(max=200))
+    city = fields.Str(validate=validate.Length(max=50))
+    country = fields.Str(validate=validate.Length(max=50))
+    profile_picture = fields.Str(data_key="profilePicture")
+    skills = fields.List(fields.Str(validate=validate.Length(max=50)), missing=list)
+    experience = fields.List(fields.Nested(ExperienceSchema), missing=list)
+    education = fields.List(fields.Nested(EducationSchema), missing=list)
     resume = fields.Str()
-    createdAt = fields.DateTime(attribute="created_at", dump_only=True)
-    updatedAt = fields.DateTime(attribute="updated_at", dump_only=True)
-
-    # Convert keys from snake_case to camelCase
-    class Meta:
-        ordered = True
-
-    @pre_dump
-    def prepare_data(self, data, **kwargs):
-        """Convert ObjectId to string and prepare data for serialization"""
-        if data and "_id" in data:
-            data["id"] = str(data["_id"])
-        return data
-
-    @post_load
-    def transform_keys(self, data, **kwargs):
-        """Transform keys from camelCase to snake_case for MongoDB"""
-        if "first_name" not in data and "firstName" in data:
-            data["first_name"] = data.pop("firstName")
-        if "last_name" not in data and "lastName" in data:
-            data["last_name"] = data.pop("lastName")
-        if "profile_picture" not in data and "profilePicture" in data:
-            data["profile_picture"] = data.pop("profilePicture")
-        return data
 
 
-class UserLoginSchema(Schema):
+class UserLoginSchema(BaseSchema):
+    """Schema for user login"""
     email = fields.Email(required=True)
-    password = fields.Str(required=True, validate=validate.Length(min=6))
-
-    class Meta:
-        ordered = True
+    password = fields.Str(required=True, validate=validate.Length(min=1))
 
 
 class UserRegisterSchema(UserSchema):
-    password = fields.Str(required=True, validate=validate.Length(min=6))
-    confirmPassword = fields.Str(required=True)
-
+    """Schema for user registration"""
+    password = fields.Str(required=True, validate=validate.Length(min=6, max=128))
+    confirm_password = fields.Str(data_key="confirmPassword", required=True, load_only=True)
+    
     @validates_schema
     def validate_passwords(self, data, **kwargs):
-        """Validate that password and confirmPassword match"""
-        if data.get("password") != data.get("confirmPassword"):
-            raise ValidationError("Passwords must match", "confirmPassword")
+        """Validate that passwords match"""
+        if data.get("password") != data.get("confirm_password"):
+            raise MarshmallowValidationError("Passwords must match", "confirm_password")
 
-    class Meta:
-        ordered = True
+
+class UserUpdateSchema(BaseSchema):
+    """Schema for updating user data (excludes password)"""
+    first_name = fields.Str(data_key="firstName", validate=validate.Length(min=1, max=50))
+    last_name = fields.Str(data_key="lastName", validate=validate.Length(min=1, max=50))
+    phone = PhoneField()
+    address = fields.Str(validate=validate.Length(max=200))
+    city = fields.Str(validate=validate.Length(max=50))
+    country = fields.Str(validate=validate.Length(max=50))
+    profile_picture = fields.Str(data_key="profilePicture")
+    skills = fields.List(fields.Str(validate=validate.Length(max=50)))
