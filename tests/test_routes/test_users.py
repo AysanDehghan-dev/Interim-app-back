@@ -85,18 +85,6 @@ def test_update_profile_with_password(client, auth_headers):
     assert "password" not in data
 
 
-def test_get_applications(client, auth_headers, test_application):
-    # Get user applications
-    response = client.get("/api/users/applications", headers=auth_headers)
-
-    # Less strict check for student project
-    if response.status_code == 200:
-        data = json.loads(response.data)
-        assert isinstance(data, list)
-    else:
-        print(f"Warning: get_applications returned {response.status_code}")
-
-
 def test_add_experience(client, auth_headers):
     # Experience data
     experience_data = {

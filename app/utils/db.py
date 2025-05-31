@@ -282,4 +282,3 @@ def create_index(collection: str, keys: Union[str, List], **kwargs):
     except PyMongoError as e:
         logger.error(f"Database error creating index on {collection}: {str(e)}")
         raise DatabaseError(f"Failed to create index: {str(e)}") from e
-
