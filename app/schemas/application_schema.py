@@ -1,7 +1,13 @@
 from marshmallow import fields, validate
 
 from app.models.enums import ApplicationStatus
-from app.schemas.base import BaseSchema, EnumField, ObjectIdField, PaginationSchema, TimestampMixin
+from app.schemas.base import (
+    BaseSchema,
+    EnumField,
+    ObjectIdField,
+    PaginationSchema,
+    TimestampMixin,
+)
 
 
 class ApplicationSchema(BaseSchema, TimestampMixin):
